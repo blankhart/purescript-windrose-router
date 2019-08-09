@@ -1,0 +1,25 @@
+{
+  "name": "purescript-servant-routing",
+  "description": "A Servant-style router",
+  "keywords": [
+    "purescript",
+    "routing",
+    "servant"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "dependencies": {
+    "purescript-heterogeneous": "^0.4.1",
+    "purescript-strings": "^4.0.0",
+    "purescript-servant": "f-o-a-m/purescript-servant#001acd1b07211d24751b268ec1824e0db0babe12"
+  },
+  "devDependencies": {
+    "purescript-hertz": "utkarshkukreti/purescript-hertz#43409a716d54441a48c86c1c63adc65d066084ce",
+    "purescript-psci-support": "^4.0.0",
+    "purescript-strongcheck": "^4.1.1"
+  }
+}

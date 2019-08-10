@@ -14,6 +14,13 @@ foreign import data ALT :: Route -> Route -> Route
 infixr 3 type ALT as :<|>
 
 --------------------------------------------------------------------------------
+-- CAPMANY (combinator)
+--------------------------------------------------------------------------------
+
+-- | 'Capture all' combinator.
+foreign import data CAPMANY :: Symbol -> Type -> Route
+
+--------------------------------------------------------------------------------
 -- VIEW (combinator)
 --------------------------------------------------------------------------------
 
@@ -22,7 +29,7 @@ infixr 3 type ALT as :<|>
 -- | various Elm-likes.  That is, the combinator to use in building the API would 
 -- | (or could) be something like 'Page (View Action)'. 
 -- | TODO: Custom type error if Page :> _ or if QPs :> a and a /~ Page
-foreign import data VIEW :: Symbol -> Type -> Route 
+foreign import data VIEW :: Symbol -> Route 
 
 --------------------------------------------------------------------------------
 -- NIL (internal combinator)

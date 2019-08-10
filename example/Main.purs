@@ -37,18 +37,16 @@ data Message = Navigate UrlWrapper
 -- Our routes are defined through a Servant-style typelevel API.
 -- Nested routes are permitted where they make sense, as in this example
 -- which branches after "posts".
-type NestedApi page =
-        VIEW "index" page 
-  :<|>  S "posts" :> (  QPs ( sortBy :: Maybe String ) :> VIEW "postIndex" page
-                  :<|>  CAP "id" Int :> S "edit" :> VIEW "postEdit" page)
+type ExampleApi =
+        VIEW "index"
+  :<|>  S "posts" :> (  QPs ( sortBy :: Maybe String ) :> VIEW "postIndex"
+                  :<|>  CAP "id" Int :> S "edit" :> VIEW "postEdit")
 
 -- Link and handler records that work with this API have the type (for some 'a')
 -- { index :: a, postIndex :: { sortBy :: Maybe String } -> a, postEdit :: Int -> a }
-
--- The endpoints will return a renderer so that it can be cached.  I.e.,
+-- Here, the endpoints will return a renderer so that it can be cached.  I.e.,
 -- when the router is run against a URL, it returns the rendering function
 -- that should be used to draw the application.
-type ExampleApi = NestedApi Renderer
 
 -- The dashboard is the basic layout common to all routes in this example.
 dashboard :: Array String -> String -> Renderer
@@ -70,7 +68,7 @@ component :: H.Component Unit
 component = H.component "Router" { initialize, update, render, subscriptions }
   where
     -- Canonicalize the typelevel API, which undoes nesting.
-    api = mkRoutable (RouteProxy :: RouteProxy ExampleApi) 
+    api = mkRoutable (RouteProxy :: _ ExampleApi) 
 
     -- Define links to the endpoints in the API.
     urls = allLinks api

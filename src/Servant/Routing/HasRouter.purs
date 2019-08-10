@@ -15,6 +15,7 @@ import Data.Array as Array
 import Data.Either (Either(..), note)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..), class IsSymbol, reflectSymbol)
+import Data.Traversable (traverse)
 import Heterogeneous.Folding (class HFoldlWithIndex, hfoldlWithIndex)
 import Prim.Row as Row
 import Prim.RowList (kind RowList, class RowToList)
@@ -28,6 +29,7 @@ import Type.Data.RowList (RLProxy(..))
 data Router page
   = RAlt (Router page) (Router page)
   | RCapture (String -> Maybe (Router page))
+  | RCaptureMany (Array String -> Maybe (Router page))
   | RQueryParam (QueryPairs -> Maybe (Router page))
   | RPathComponent String (Router page)
   | RView page
@@ -85,6 +87,16 @@ else instance hasRouterCapture
   mkRouter _ capture = RCapture $ fromCapture >=> \a -> 
     pure $ mkRouter (RouteProxy :: RouteProxy sublayout) (capture a)
 
+-- | CaptureMany
+else instance hasRouterCaptureMany
+  ::  ( HasRouter sublayout page handler
+      , IsSymbol s
+      , FromCapture a
+      )
+  => HasRouter (CAPMANY s a :> sublayout) page (Array a -> handler) where
+  mkRouter _ captureMany = RCaptureMany $ traverse fromCapture >=> \arr -> 
+    pure $ mkRouter (RouteProxy :: _ sublayout) (captureMany arr)
+
 -- | QueryParam 
 else instance hasRouterQueryParam 
   ::  ( HasRouter sublayout page handler
@@ -99,7 +111,7 @@ else instance hasRouterQueryParam
 
 -- | VIEW
 else instance hasRouterView
-  :: ( IsSymbol sym ) => HasRouter (VIEW sym view) page page where 
+  :: ( IsSymbol sym ) => HasRouter (VIEW sym) page page where 
   mkRouter _ page = RView page
 
 --------------------------------------------------------------------------------
@@ -117,6 +129,9 @@ routeLoc location@(Location loc) r = case r of
     path <- Array.uncons loc.locPath
     router <- capture path.head
     routeLoc (Location $ loc { locPath = path.tail }) router
+  RCaptureMany captureMany -> do 
+    router <- captureMany loc.locPath
+    routeLoc (Location $ loc { locPath = [] }) router
   RQueryParam interpret -> do
     router <- interpret (QueryPairs loc.locQuery)
     routeLoc (Location $ loc { locQuery = [] }) router 

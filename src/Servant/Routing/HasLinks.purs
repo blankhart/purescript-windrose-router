@@ -7,6 +7,7 @@ import Servant.Routing.API
 import Servant.Routing.IsEndpoint (class IsEndpoint)
 import Servant.Routing.Routable (Routable)
 
+import Data.Foldable (class Foldable, foldl)
 import Data.Symbol (SProxy(..), class IsSymbol, reflectSymbol)
 import Heterogeneous.Folding (class FoldlRecord)
 import Prim.Row as Row
@@ -38,7 +39,7 @@ allLinksWith
     => (Link -> action)
     -> Routable layout
     -> links
-allLinksWith toA _ = mkLinks (RouteProxy :: RouteProxy layout) toA ""
+allLinksWith toAction _ = mkLinks (RouteProxy :: RouteProxy layout) toAction ""
 
 --------------------------------------------------------------------------------
 -- HasLinks
@@ -56,8 +57,8 @@ instance hasLinksPathAltNil
       , IsSymbol name
       )
   => HasLinks (endpoint :<|> NIL) action (Record links) where
-  mkLinks _ toA link = Record.insert (SProxy :: SProxy name)
-    (mkLinks (RouteProxy :: RouteProxy endpoint) toA link) 
+  mkLinks _ toAction link = Record.insert (SProxy :: _ name)
+    (mkLinks (RouteProxy :: _ endpoint) toAction link) 
     {}
 
 else instance hasLinksPathAltCons
@@ -69,9 +70,9 @@ else instance hasLinksPathAltCons
       , HasLinks sublayout action (Record sublinks)
       )
   => HasLinks (endpoint :<|> sublayout) action (Record links) where
-  mkLinks _ toA link = Record.insert (SProxy :: SProxy name) 
-    (mkLinks (RouteProxy :: RouteProxy endpoint) toA link) 
-    (mkLinks (RouteProxy :: RouteProxy sublayout) toA link)
+  mkLinks _ toAction link = Record.insert (SProxy :: _ name) 
+    (mkLinks (RouteProxy :: _ endpoint) toAction link) 
+    (mkLinks (RouteProxy :: _ sublayout) toAction link)
 
 -- | Path Component
 else instance hasLinksPathComponent
@@ -79,9 +80,9 @@ else instance hasLinksPathComponent
       , IsSymbol s
       )
   => HasLinks (S s :> sublayout) action links where
-  mkLinks _ toA link = 
-    mkLinks (RouteProxy :: RouteProxy sublayout) toA 
-      (appendPathSegment (reflectSymbol $ SProxy :: SProxy s) link)
+  mkLinks _ toAction link = 
+    mkLinks (RouteProxy :: _ sublayout) toAction 
+      (appendPathSegment (reflectSymbol $ SProxy :: _ s) link)
  
 -- | Capture
 else instance hasLinksCapture
@@ -90,9 +91,20 @@ else instance hasLinksCapture
       , ToCapture a
       )
   => HasLinks (CAP s a :> sublayout) action (a -> links) where
-  mkLinks _ toA link = \a -> 
-    mkLinks (RouteProxy :: RouteProxy sublayout) toA 
+  mkLinks _ toAction link = \a -> 
+    mkLinks (RouteProxy :: _ sublayout) toAction 
       (appendPathSegment (toCapture a) link)
+
+-- | CaptureMany
+else instance hasLinksCaptureMany
+  ::  ( HasLinks sublayout action links
+      , IsSymbol s
+      , ToCapture a
+      )
+  => HasLinks (CAPMANY s a :> sublayout) action (Array a -> links) where
+  mkLinks _ toAction link = \captures -> 
+    mkLinks (RouteProxy :: _ sublayout) toAction 
+      (foldl (\l c -> appendPathSegment (toCapture c) l) link captures)
 
 -- | QueryParam 
 else instance hasLinksQueryParam 
@@ -101,11 +113,11 @@ else instance hasLinksQueryParam
       , FoldlRecord QueryParamEntry (Array QueryParam) paramsRL params (Array QueryParam) 
       ) 
   => HasLinks (QPs params :> sublayout) action (Record params -> links) where 
-  mkLinks _ toA link = \params -> 
-    mkLinks (RouteProxy :: RouteProxy sublayout) toA
+  mkLinks _ toAction link = \params -> 
+    mkLinks (RouteProxy :: _ sublayout) toAction
       (appendQueryString (formatQueryString (QueryParams params)) link)
 
 -- | View
 else instance hasLinksView
-  ::  ( IsSymbol sym ) => HasLinks (VIEW sym view) action action where 
-  mkLinks _ toA link = toA link
+  ::  ( IsSymbol sym ) => HasLinks (VIEW sym) action action where 
+  mkLinks _ toAction link = toAction link

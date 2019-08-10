@@ -12,10 +12,10 @@ import Servant.Routing.API
 
 -- | Example:
 -- | name :: forall e n . IsEndpoint e n => IsSymbol n => RouteProxy e -> String 
--- | name _ = reflectSymbol (SProxy :: SProxy n)
+-- | name _ = reflectSymbol (SProxy :: _ n)
 class IsEndpoint (route :: Route) (name :: Symbol) | route -> name
 
-instance viewIsEndpoint :: IsEndpoint (VIEW name view) name 
+instance viewIsEndpoint :: IsEndpoint (VIEW name) name 
 
 else instance seqIsEndpoint 
   :: ( IsEndpoint b s )

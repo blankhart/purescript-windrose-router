@@ -3,7 +3,9 @@ module Test.Main where
 import Prelude
 import Effect (Effect)
 import Data.Either (Either(..))
+import Data.String (joinWith)
 import Data.Tuple (Tuple(..))
+import Effect.Console (log)
 import Servant.API
 import Servant.Routing
 import Test.StrongCheck
@@ -30,9 +32,9 @@ derive newtype instance bArbitrary :: Arbitrary B
 -- purescript-routing tests begin
 
 type MyRoutes = 
-        S "foo" :> CAP "foo" N :> QPs ( welp :: Required String, b :: Required B ) :> VIEW "foo" String
-  :<|>  S "bar" :> CAP "bar" B :> QPs ( bar :: Required String ) :> VIEW "bar" String
-  :<|>  S "corge" :> CAP "corge" String :> VIEW "corge" String
+        S "foo" :> CAP "foo" N :> QPs ( welp :: Required String, b :: Required B ) :> VIEW "foo"
+  :<|>  S "bar" :> CAP "bar" B :> QPs ( bar :: Required String ) :> VIEW "bar"
+  :<|>  S "corge" :> CAP "corge" String :> VIEW "corge"
 
 foo :: N -> { welp :: Required String, b :: Required B } -> String 
 foo (N f) { welp : Required w, b : Required (B b) } = 
@@ -69,26 +71,30 @@ checkPurescriptRoutingTests = do
 
 -- README tests
 
-type ReadmeApi page =
-       S "profile" :> CAP "username" String :> VIEW "profile" page
+type ReadmeApi =
+       S "profile" :> CAP "username" String :> VIEW "profile"
   :<|> S "article"
-        :> (CAP "id" Int :> VIEW "article_id" page
-        :<|> S "search" :> QPs ( term :: Required String ) :> VIEW "article_search" page)
+        :> (CAP "id" Int :> VIEW "article_id"
+        :<|> S "search" :> QPs ( term :: Required String ) :> VIEW "article_search")
+  :<|> S "figures" :> CAPMANY "figures" Int :> VIEW "figures"
 
 checkReadMeTests :: Effect Unit 
 checkReadMeTests = do
 
-  let api = mkRoutable (RouteProxy :: RouteProxy (ReadmeApi String))
-    
+  let api = mkRoutable (RouteProxy :: _ ReadmeApi)
+
   let handlers =
         { profile : \username -> "Profile for " <> username
         , article_id : \(id :: Int) -> "Article #" <> show id
         , article_search: \{ term : Required s } -> "Searched for " <> s
+        , figures: \arr -> "Figures: " <> joinWith ", " (show <$> arr)
         }
   assert $ route api handlers "/profile/blankhart" === Right "Profile for blankhart"
+  assert $ route api handlers "/figures/1/2/3/4" === Right "Figures: 1, 2, 3, 4"
 
   let links = allLinksWith identity api
   assert $ links.profile "blankhart" === "/profile/blankhart"
+  assert $ links.figures [1, 2, 3] === "/figures/1/2/3"
 
   quickCheck $ \username -> 
     route api handlers (links.profile username) === Right (handlers.profile username)
@@ -97,5 +103,8 @@ checkReadMeTests = do
 
 main :: Effect Unit
 main = do
-  checkPurescriptRoutingTests
+  log "README tests"
   checkReadMeTests
+  log "purescript-routing tests"
+  checkPurescriptRoutingTests
+  

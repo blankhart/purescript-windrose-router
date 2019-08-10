@@ -48,11 +48,13 @@ The library uses the typelevel API to produce the following functions:
 
 ```purescript
   let handlers =
-    { profile : \username -> "Profile for " <> username
-    , article_id : \(id :: Int) -> "Article #" <> show id
-    , article_search: \{ term : Required s } -> "Searched for " <> s
-    }
+        { profile : \username -> "Profile for " <> username
+        , article_id : \(id :: Int) -> "Article #" <> show id
+        , article_search: \{ term : Required s } -> "Searched for " <> s
+        , figures: \arr -> "Figures: " <> joinWith ", " (show <$> arr)
+        }
   assert $ route api handlers "/profile/blankhart" === Right "Profile for blankhart"
+  assert $ route api handlers "/figures/1/2/3/4" === Right "Figures: 1, 2, 3, 4"
 ```
 
 * `Servant.Routing.HasLinks.allLinksWith`.  This generates a record of safe link generators to the named endpoints.  The link generators may accept capture and query parameter arguments and by default return a `String` representing the endpoint's URL.  The default can be modified by passing in `allLinksWith` a function of type `Link -> a`, where `Link` is (currently) an alias for `String`.  These functions could be used to generate messages interpreted by a web framework.

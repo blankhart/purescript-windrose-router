@@ -13,28 +13,18 @@ The library is intended to be framework-independent.  Some goals are: (i) to per
 Everything should work by cloning the repo and then:
 
 ```bash
-yarn install
-yarn pulp build
-```
-
-To run the tests:
-
-```bash
-yarn pulp test
-```
-
-Or to run the example:
-
-```bash
-yarn run:example
+yarn install      # also installs bower dependencies
+yarn pulp build   # builds project
+yarn pulp test    # runs the tests
+yarn run:example  # run the example
 ```
 
 ## Usage
 
-Usage starts by defining a typelevel API with named endpoints.
+Usage starts by defining a typelevel API with named endpoints, as illustrated in `tests/Test/Main.purs`.
 
 ```purescript
-type ExampleApi page =
+type ReadmeApi page =
        S "profile" :> CAP "username" String :> VIEW "profile" page
   :<|> S "article"
         :> (CAP "id" Int :> VIEW "article_id" page
@@ -45,7 +35,7 @@ Each endpoint of the typelevel API must terminate in a `VIEW name page` combinat
 
 The library uses the typelevel API to produce the following functions:
 
-* `Servant.Routing.Routable.mkRoutable`.  This is a smart constructor used to turn the user's API into a `Routable api`, which is just a proxy for a canonicalized version of the type.  The normalization process primarily removes nested alternatives and ensures that all type operators associate to the right.
+* `Servant.Routing.Routable.mkRoutable`.  This is a smart constructor used to turn the user's API into a `Routable api`.  This is just a proxy for a normalized version of the type in which nested alternatives have been removed and all type operators associate to the right.
 
 ```purescript
 let api = mkRoutable (RouteProxy :: RouteProxy (ExampleApi String))

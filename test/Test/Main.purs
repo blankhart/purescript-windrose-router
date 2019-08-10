@@ -89,12 +89,17 @@ checkReadMeTests = do
         , article_search: \{ term : Required s } -> "Searched for " <> s
         , figures: \arr -> "Figures: " <> joinWith ", " (show <$> arr)
         }
-  assert $ route api handlers "/profile/blankhart" === Right "Profile for blankhart"
-  assert $ route api handlers "/figures/1/2/3/4" === Right "Figures: 1, 2, 3, 4"
+      match = route api handlers
+  assert $ match "/profile/blankhart" === Right "Profile for blankhart"
+  assert $ match "/article/34" === Right "Article #34"
+  assert $ match "/article/search?term=ptolemy" === Right "Searched for ptolemy"
+  assert $ match "/figures/1/2/3/4" === Right "Figures: 1, 2, 3, 4"
 
   let links = allLinksWith identity api
   assert $ links.profile "blankhart" === "/profile/blankhart"
-  assert $ links.figures [1, 2, 3] === "/figures/1/2/3"
+  assert $ links.article_id 34 === "/article/34"
+  assert $ links.article_search { term: Required "ptolemy" } === "/article/search?term=ptolemy"
+  assert $ links.figures [1, 2, 3, 4] === "/figures/1/2/3/4"
 
   quickCheck $ \username -> 
     route api handlers (links.profile username) === Right (handlers.profile username)

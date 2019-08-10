@@ -53,8 +53,11 @@ The library uses the typelevel API to produce the following functions:
         , article_search: \{ term : Required s } -> "Searched for " <> s
         , figures: \arr -> "Figures: " <> joinWith ", " (show <$> arr)
         }
-  assert $ route api handlers "/profile/blankhart" === Right "Profile for blankhart"
-  assert $ route api handlers "/figures/1/2/3/4" === Right "Figures: 1, 2, 3, 4"
+      match = route api handlers
+  assert $ match "/profile/blankhart" === Right "Profile for blankhart"
+  assert $ match "/article/34" === Right "Article #34"
+  assert $ match "/article/search?term=ptolemy" === Right "Searched for ptolemy"
+  assert $ match "/figures/1/2/3/4" === Right "Figures: 1, 2, 3, 4"
 ```
 
 * `Servant.Routing.HasLinks.allLinksWith`.  This generates a record of safe link generators to the named endpoints.  The link generators may accept capture and query parameter arguments and by default return a `String` representing the endpoint's URL.  The default can be modified by passing in `allLinksWith` a function of type `Link -> a`, where `Link` is (currently) an alias for `String`.  These functions could be used to generate messages interpreted by a web framework.
@@ -62,7 +65,9 @@ The library uses the typelevel API to produce the following functions:
 ```purescript
   let links = allLinksWith identity api
   assert $ links.profile "blankhart" === "/profile/blankhart"
-  assert $ links.figures [1, 2, 3] === "/figures/1/2/3"
+  assert $ links.article_id 34 === "/article/34"
+  assert $ links.article_search { term: Required "ptolemy" } === "/article/search?term=ptolemy"
+  assert $ links.figures [1, 2, 3, 4] === "/figures/1/2/3/4"
 ```
 
 These functions should satisfy the property that, for each endpoint in the user's API, running `route` on the link produced by `allLinks` always produces the same `page` as the corresponding handler.

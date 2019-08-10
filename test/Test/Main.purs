@@ -27,15 +27,7 @@ derive newtype instance bEncodeQueryParam :: EncodeQueryParam B
 derive newtype instance bFromCapture :: FromCapture B
 derive newtype instance bArbitrary :: Arbitrary B
 
--- From README
-
-type ExampleApi page =
-       S "profile" :> CAP "username" String :> VIEW "profile" page
-  :<|> S "article"
-        :> (CAP "id" Int :> VIEW "article_id" page
-        :<|> S "search" :> QPs ( term :: Required String ) :> VIEW "article_search" page)
-
--- Test begins
+-- purescript-routing tests begin
 
 type MyRoutes = 
         S "foo" :> CAP "foo" N :> QPs ( welp :: Required String, b :: Required B ) :> VIEW "foo" String
@@ -52,8 +44,8 @@ bar (B b) { bar : Required s } = "bar = " <> show b <> ", bar: " <> s
 corge :: String -> String 
 corge c = "corge = " <> c
 
-main :: Effect Unit
-main = do
+checkPurescriptRoutingTests :: Effect Unit 
+checkPurescriptRoutingTests = do
   let 
     api = mkRoutable (RouteProxy :: RouteProxy MyRoutes)
     handlers = { foo, bar, corge }
@@ -75,18 +67,35 @@ main = do
   quickCheck $ \(Tuple b s) -> 
     handle (link.bar b { bar: Required s }) == Right (bar b { bar: Required s })
 
-  let 
-    readme_api = mkRoutable (RouteProxy :: RouteProxy (ExampleApi String))
-    readme_handlers =
-      { profile : \username -> "Profile for " <> username
-      , article_id : \(id :: Int) -> "Article #" <> show id
-      , article_search: \{ term : Required s } -> "Searched for " <> s
-      }
-    readme_links = allLinksWith identity readme_api
+-- README tests
 
-  assert $ route readme_api readme_handlers "/profile/blankhart" === Right "Profile for blankhart"
+type ReadmeApi page =
+       S "profile" :> CAP "username" String :> VIEW "profile" page
+  :<|> S "article"
+        :> (CAP "id" Int :> VIEW "article_id" page
+        :<|> S "search" :> QPs ( term :: Required String ) :> VIEW "article_search" page)
 
-  assert $ readme_links.profile "blankhart" === "/profile/blankhart"
+checkReadMeTests :: Effect Unit 
+checkReadMeTests = do
+
+  let api = mkRoutable (RouteProxy :: RouteProxy (ReadmeApi String))
+    
+  let handlers =
+        { profile : \username -> "Profile for " <> username
+        , article_id : \(id :: Int) -> "Article #" <> show id
+        , article_search: \{ term : Required s } -> "Searched for " <> s
+        }
+  assert $ route api handlers "/profile/blankhart" === Right "Profile for blankhart"
+
+  let links = allLinksWith identity api
+  assert $ links.profile "blankhart" === "/profile/blankhart"
 
   quickCheck $ \username -> 
-    route readme_api readme_handlers (readme_links.profile username) === Right (readme_handlers.profile username)
+    route api handlers (links.profile username) === Right (handlers.profile username)
+
+-- Main 
+
+main :: Effect Unit
+main = do
+  checkPurescriptRoutingTests
+  checkReadMeTests

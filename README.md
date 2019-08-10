@@ -4,9 +4,9 @@
 
 This is a routing library for front-end web applications.  It provides a Servant-style interface to the functionality in [purescript-routing](https://github.com/slamdata/purescript-routing) and [purescript-routing-duplex](https://github.com/natefaubion/purescript-routing-duplex), but abstracting away the parsing and printing of URLs.  
 
-This project is inspired by the Servant-style router used in [Miso](https://github.com/dmjio/miso), a Haskell web framework.  This project also has had some convergent evolution with the Servant-style [purescript-trout](https://github.com/owickstrom/purescript-trout) client-server HTTP library, which also allows named endpoints but through a different API.
+This project is a port of the Servant-style router used in [Miso](https://github.com/dmjio/miso), a Haskell web framework, with Purescript adaptations.  It currently uses some combinators from [purescript-servant](https://github.com/f-o-a-m/purescript-servant). The [purescript-trout](https://github.com/owickstrom/purescript-trout) client-server HTTP library and the [purescript-kushikatsu](https://github.com/justinwoo/purescript-kushikatsu) routers also allow named endpoints, through different DSLs.
 
-The library is intended to be framework-independent.  Some goals of the project are: (i) to permit nested routes in typelevel APIs; (ii) to allow users to declare named endpoints, and then associate them with linkers and handlers using Purescript's record system; and (iii) to leverage Purescript's custom error types to validate web APIs (still in progress).
+The library is intended to be framework-independent.  Some goals are: (i) to permit nested routes in typelevel APIs; (ii) to allow users to declare named endpoints, and then associate them with linkers and handlers using Purescript's record system; and (iii) to leverage Purescript's custom error types to validate web APIs (still in progress).  The project is currently in an experimental state and may be restructured in the future to accommodate different approaches to defining typelevel APIs.
 
 ## Installation
 
@@ -17,7 +17,7 @@ yarn install
 yarn pulp build
 ```
 
-Or to run the tests:
+To run the tests:
 
 ```bash
 yarn pulp test

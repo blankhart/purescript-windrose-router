@@ -4,6 +4,8 @@ import Prelude
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String as S
+import Data.String.NonEmpty (NonEmptyString)
+import Data.String.NonEmpty as NES
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 
@@ -54,9 +56,10 @@ instance stringToLocation :: ToLocation String where
           let { before, after } = S.splitAt i s 
           in { before: before, after: S.drop (S.length ps) after }
 
+instance nonemptyStringToLocation :: ToLocation NonEmptyString where 
+  toLocation = NES.toString >>> toLocation 
+
 instance stringFromLocation :: FromLocation String where 
   fromLocation (Location loc) = S.joinWith "/" loc.locPath <> case loc.locQuery of 
     [] -> ""
     pairs -> "?" <> S.joinWith "&" ((\(Tuple k v) -> k <> "=" <> v) <$> pairs)
-
--- TODO: Instance for NonEmptyString

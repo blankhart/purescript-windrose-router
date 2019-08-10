@@ -34,7 +34,7 @@ Usage starts by defining a typelevel API with named endpoints, as illustrated in
     :<|> S "figures" :> CAPMANY "figures" Int :> VIEW "figures"
 ```
 
-Each endpoint of the typelevel API must terminate in a `VIEW name page` combinator.  The endpoint is uniquely specified by the `name` symbol.  The handler for the endpoint must produce values of type `page`.  For example, in an Elm-like framework, the `page` type might be the framework's equivalent of an `Html Msg` (see the example for an variation on this).
+Each endpoint of the typelevel API must terminate in a `VIEW name` combinator.  The endpoint is uniquely specified by the `name` symbol.  
 
 The library uses the typelevel API to produce the following functions:
 
@@ -44,7 +44,7 @@ The library uses the typelevel API to produce the following functions:
   let api = mkRoutable (RouteProxy :: _ ReadmeApi)
 ```
 
-* `Servant.Routing.HasRouter.route`.  This runs a user-supplied record of handlers for each named endpoint over a `uri`.  Each endpoint `name` in the API specifies the field label for the corresponding handler. The endpoint's type fully determines the type of the handler.  A handler may accept capture and query parameter arguments and must return a `page`.  A `uri` can be any type with a `Servant.Routing.Location.ToLocation` instance (such as a `String`).
+* `Servant.Routing.HasRouter.route`.  This runs a user-supplied record of handlers for each named endpoint over a `uri`.  Each endpoint `name` in the API specifies the field label for the corresponding handler. The endpoint's type fully determines the type of the handler.  A handler may accept capture and query parameter arguments.  Each handler must return values of the same type.  For example, in an Elm-like framework, the common return type might be the framework's equivalent of an `Html Msg` (see the example for an variation on this).  A `uri` can be any type with a `Servant.Routing.Location.ToLocation` instance (such as a `String`).
 
 ```purescript
   let handlers =
@@ -60,7 +60,7 @@ The library uses the typelevel API to produce the following functions:
   assert $ match "/figures/1/2/3/4" === Right "Figures: 1, 2, 3, 4"
 ```
 
-* `Servant.Routing.HasLinks.allLinksWith`.  This generates a record of safe link generators to the named endpoints.  The link generators may accept capture and query parameter arguments and by default return a `String` representing the endpoint's URL.  The default can be modified by passing in `allLinksWith` a function of type `Link -> a`, where `Link` is (currently) an alias for `String`.  These functions could be used to generate messages interpreted by a web framework.
+* `Servant.Routing.HasLinks.allLinksWith`.  This generates a record of safe link generators to the named endpoints.  The link generators may accept capture and query parameter arguments, and by default return a `String` representing the endpoint's URL.  The default can be modified by passing in `allLinksWith` a function of type `Link -> a`, where `Link` is (currently) an alias for `String`.  These functions could be used to generate messages interpreted by a web framework.
 
 ```purescript
   let links = allLinksWith identity api
@@ -70,7 +70,7 @@ The library uses the typelevel API to produce the following functions:
   assert $ links.figures [1, 2, 3, 4] === "/figures/1/2/3/4"
 ```
 
-These functions should satisfy the property that, for each endpoint in the user's API, running `route` on the link produced by `allLinks` always produces the same `page` as the corresponding handler.
+These functions should satisfy the property that, for each endpoint in the user's API, running `route` on the link produced by `allLinks` always produces the same value as the corresponding handler.
 
 ```purescript
   quickCheck $ \username ->

@@ -7,7 +7,7 @@ import Servant.Routing.API
 import Servant.Routing.IsEndpoint (class IsEndpoint)
 import Servant.Routing.Routable (Routable)
 
-import Data.Foldable (class Foldable, foldl)
+import Data.Foldable (foldl)
 import Data.Symbol (SProxy(..), class IsSymbol, reflectSymbol)
 import Heterogeneous.Folding (class FoldlRecord)
 import Prim.Row as Row

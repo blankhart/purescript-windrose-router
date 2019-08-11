@@ -126,21 +126,21 @@ routeLoc location@(Location loc) r = case r of
   RAlt a b -> 
     routeLoc location a <|> routeLoc location b
   RCapture capture -> do 
-    path <- Array.uncons loc.locPath
+    path <- Array.uncons loc.path
     router <- capture path.head
-    routeLoc (Location $ loc { locPath = path.tail }) router
+    routeLoc (Location $ loc { path = path.tail }) router
   RCaptureMany captureMany -> do 
-    router <- captureMany loc.locPath
-    routeLoc (Location $ loc { locPath = [] }) router
+    router <- captureMany loc.path
+    routeLoc (Location $ loc { path = [] }) router
   RQueryParam interpret -> do
-    router <- interpret (QueryPairs loc.locQuery)
-    routeLoc (Location $ loc { locQuery = [] }) router 
+    router <- interpret (QueryPairs loc.query)
+    routeLoc (Location $ loc { query = [] }) router 
   RPathComponent segment router -> do 
-    path <- Array.uncons loc.locPath
+    path <- Array.uncons loc.path
     guard $ path.head == segment
-    routeLoc (Location $ loc { locPath = path.tail }) router
+    routeLoc (Location $ loc { path = path.tail }) router
   RView a ->
-    guard (loc.locPath == [] || loc.locPath == [""]) $> a
+    guard (loc.path == [] || loc.path == [""]) $> a
 
 --------------------------------------------------------------------------------
 -- Runners

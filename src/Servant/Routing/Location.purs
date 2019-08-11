@@ -15,8 +15,8 @@ import Data.Tuple (Tuple(..))
 --------------------------------------------------------------------------------
 
 newtype Location = Location
-  { locPath  :: Array String
-  , locQuery :: Array (Tuple String String)
+  { path  :: Array String
+  , query :: Array (Tuple String String)
   }
 
 class ToLocation a where 
@@ -36,8 +36,8 @@ instance stringToLocation :: ToLocation String where
     let 
       { before: preFragment, after: uriFragment } = breakPattern (S.Pattern "#") postAuthority 
       { before: uriPath, after: uriQuery } = breakPattern (S.Pattern "?") preFragment
-      locPath = S.split (S.Pattern "/") $ fromMaybe uriPath (S.stripPrefix (S.Pattern "/") uriPath) 
-    locQuery <- 
+      path = S.split (S.Pattern "/") $ fromMaybe uriPath (S.stripPrefix (S.Pattern "/") uriPath) 
+    query <- 
       if S.null uriQuery 
         then Just []
         else 
@@ -45,7 +45,7 @@ instance stringToLocation :: ToLocation String where
           in for querySegments $ \p -> case S.split (S.Pattern "=") p of
             [k, v] -> Just (Tuple k v)
             _ -> Nothing 
-    pure $ Location { locPath, locQuery }
+    pure $ Location { path, query }
 
     where 
 
@@ -60,6 +60,6 @@ instance nonemptyStringToLocation :: ToLocation NonEmptyString where
   toLocation = NES.toString >>> toLocation 
 
 instance stringFromLocation :: FromLocation String where 
-  fromLocation (Location loc) = S.joinWith "/" loc.locPath <> case loc.locQuery of 
+  fromLocation (Location loc) = S.joinWith "/" loc.path <> case loc.query of 
     [] -> ""
     pairs -> "?" <> S.joinWith "&" ((\(Tuple k v) -> k <> "=" <> v) <$> pairs)

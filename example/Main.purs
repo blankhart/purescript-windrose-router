@@ -29,7 +29,7 @@ type State = { url :: String, renderer :: Renderer }
 newtype UrlWrapper = UrlWrapper R.Url 
 
 instance wrapperToLocation :: ToLocation UrlWrapper where 
-  toLocation (UrlWrapper url) = pure $ Location { locPath: url.path, locQuery: url.query }
+  toLocation (UrlWrapper url) = pure $ Location { path: url.path, query: url.query }
 
 -- The only action taken by this application is to change the route.
 data Message = Navigate UrlWrapper

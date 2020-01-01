@@ -4,7 +4,7 @@ import Data.Int as Int
 import Data.Maybe (Maybe(..))
 import Data.String.NonEmpty (NonEmptyString)
 import Data.String.NonEmpty as NES
-import Prelude ((>>>), (<<<), (>=>), ($), (<$>), (<>), identity, map, otherwise, show)
+import Prelude (identity, show, (>=>), (>>>))
 import Global as G
 
 --------------------------------------------------------------------------------

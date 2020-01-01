@@ -1,0 +1,35 @@
+{
+  "name": "purescript-windrose-router",
+  "description": "A typelevel frontend router",
+  "homepage": "https://github.com/blankhart/purescript-windrose-router",
+  "keywords": [
+    "purescript",
+    "servant",
+    "trout",
+    "typelevel",
+    "routing",
+    "router"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "dist",
+    "output"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/blankhart/purescript-windrose-router.git"
+  },
+  "dependencies": {
+    "purescript-heterogeneous": "^0.4.1",
+    "purescript-strings": "^4.0.0"
+  },
+  "devDependencies": {
+    "purescript-aff-coroutines": "^7.0.0",
+    "purescript-halogen": "slamdata/purescript-halogen#115b48959afae35bdfebfac87221ba0ac61b5367",
+    "purescript-hertz": "utkarshkukreti/purescript-hertz#43409a716d54441a48c86c1c63adc65d066084ce",
+    "purescript-psci-support": "^4.0.0",
+    "purescript-strongcheck": "^4.1.1"
+  }
+}

@@ -1,13 +1,13 @@
-module Servant.Routing.HasRouter where
+module Windrose.Router.HasRouter where
 
 import Prelude
-import Servant.API
-import Servant.Routing.API
-import Servant.Routing.Error (RoutingError(..))
-import Servant.Routing.IsEndpoint (class IsEndpoint)
-import Servant.Routing.Location (class ToLocation, Location(..), toLocation)
-import Servant.Routing.QueryPairs (FoldQueryPairs(..), QueryPairs(..))
-import Servant.Routing.Routable (Routable)
+import Windrose.Router.API (type (:<|>), type (:>), C, M, NIL, P, Q, RouteProxy(..), V, kind Route)
+import Windrose.Router.Error (RoutingError(..))
+import Windrose.Router.IsEndpoint (class IsEndpoint)
+import Windrose.Router.Location (class ToLocation, Location(..), toLocation)
+import Windrose.Router.QueryPairs (QueryPairs(..), fromQueryPairs, FoldFromQueryPairs)
+import Windrose.Router.Routable (Routable)
+import Windrose.Router.UrlPiece (class FromUrlPiece, fromUrlPiece)
 
 import Control.Alt ((<|>))
 import Control.MonadZero (guard)
@@ -16,11 +16,11 @@ import Data.Either (Either(..), note)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..), class IsSymbol, reflectSymbol)
 import Data.Traversable (traverse)
-import Heterogeneous.Folding (class HFoldlWithIndex, hfoldlWithIndex)
+import Heterogeneous.Folding (class HFoldlWithIndex)
 import Prim.Row as Row
-import Prim.RowList (kind RowList, class RowToList)
+import Prim.RowList (class RowToList)
 import Record as Record
-import Type.Data.RowList (RLProxy(..))
+import Type.Data.RowList (RLProxy)
 
 --------------------------------------------------------------------------------
 -- A 'Router' contains the information necessary to execute a handler.
@@ -41,8 +41,8 @@ data Router page
 class HasRouter (layout :: Route) (page :: Type) (handler :: Type) | layout page -> handler where
   mkRouter :: RouteProxy layout -> handler -> Router page
 
--- | Path Alternative
-instance hasRouterPathAltNil
+-- | Route sum
+instance hasRouterRouteSumNil
   ::  ( HasRouter endpoint page viewer
       , IsEndpoint endpoint name
       , Row.Cons name viewer () handler
@@ -50,10 +50,10 @@ instance hasRouterPathAltNil
       )
   => HasRouter (endpoint :<|> NIL) page (Record handler) where
   mkRouter _ handler = 
-    let field = SProxy :: SProxy name
+    let field = SProxy :: _ name
     in mkRouter (RouteProxy :: RouteProxy endpoint) (Record.get field handler)
 
-else instance hasRouterPathAltCons
+else instance hasRouterRouteSumCons
   ::  ( HasRouter endpoint page viewer
       , IsEndpoint endpoint name
       , HasRouter sublayout page (Record subhandler)
@@ -63,55 +63,54 @@ else instance hasRouterPathAltCons
       )
   => HasRouter (endpoint :<|> sublayout) page (Record handler) where
   mkRouter _ handler = 
-    let field = SProxy :: SProxy name
+    let field = SProxy :: _ name
     in RAlt
         (mkRouter (RouteProxy :: RouteProxy endpoint) (Record.get field handler)) 
         (mkRouter (RouteProxy :: RouteProxy sublayout) (Record.delete field handler))
 
--- | Path Component
+-- | P
 else instance hasRouterPathComponent
   ::  ( HasRouter sublayout page handler
       , IsSymbol s
       )
-  => HasRouter (S s :> sublayout) page handler where
-  mkRouter _ handler = RPathComponent (reflectSymbol $ SProxy :: SProxy s) $ 
-    mkRouter (RouteProxy :: RouteProxy sublayout) handler
+  => HasRouter (P s :> sublayout) page handler where
+  mkRouter _ handler = RPathComponent (reflectSymbol (SProxy :: SProxy s)) $ 
+    mkRouter (RouteProxy :: _ sublayout) handler
 
--- | Capture
+-- | C
 else instance hasRouterCapture
   ::  ( HasRouter sublayout page handler
       , IsSymbol s
-      , FromCapture a
+      , FromUrlPiece a
       )
-  => HasRouter (CAP s a :> sublayout) page (a -> handler) where
-  mkRouter _ capture = RCapture $ fromCapture >=> \a -> 
-    pure $ mkRouter (RouteProxy :: RouteProxy sublayout) (capture a)
+  => HasRouter (C s a :> sublayout) page (a -> handler) where
+  mkRouter _ capture = RCapture $ fromUrlPiece >=> \a -> 
+    pure $ mkRouter (RouteProxy :: _ sublayout) (capture a)
 
--- | CaptureMany
+-- | M
 else instance hasRouterCaptureMany
   ::  ( HasRouter sublayout page handler
       , IsSymbol s
-      , FromCapture a
+      , FromUrlPiece a
       )
-  => HasRouter (CAPMANY s a :> sublayout) page (Array a -> handler) where
-  mkRouter _ captureMany = RCaptureMany $ traverse fromCapture >=> \arr -> 
+  => HasRouter (M s a :> sublayout) page (Array a -> handler) where
+  mkRouter _ captureMany = RCaptureMany $ traverse fromUrlPiece >=> \arr -> 
     pure $ mkRouter (RouteProxy :: _ sublayout) (captureMany arr)
 
--- | QueryParam 
-else instance hasRouterQueryParam 
+-- | Q 
+else instance hasRouterQueryString
   ::  ( HasRouter sublayout page handler
       , RowToList params paramsRL
-      , HFoldlWithIndex FoldQueryPairs (QueryPairs -> Maybe (Record ())) (RLProxy paramsRL) (QueryPairs -> Maybe (Record params)) 
+      , HFoldlWithIndex FoldFromQueryPairs (QueryPairs -> Maybe (Record ())) (RLProxy paramsRL) (QueryPairs -> Maybe (Record params)) 
       ) 
-  => HasRouter (QPs params :> sublayout) page (Record params -> handler) where 
+  => HasRouter (Q params :> sublayout) page (Record params -> handler) where 
   mkRouter _ handler = RQueryParam $ \pairs -> do 
-    let empty = (const (Just {}) :: QueryPairs -> Maybe (Record ()))
-    queryRecord <- hfoldlWithIndex FoldQueryPairs empty (RLProxy :: RLProxy paramsRL) $ pairs
-    pure $ mkRouter (RouteProxy :: RouteProxy sublayout) (handler queryRecord)
+    queryRecord <- fromQueryPairs pairs
+    pure $ mkRouter (RouteProxy :: _ sublayout) (handler queryRecord)
 
--- | VIEW
+-- | V
 else instance hasRouterView
-  :: ( IsSymbol sym ) => HasRouter (VIEW sym) page page where 
+  :: ( IsSymbol sym ) => HasRouter (V sym) page page where 
   mkRouter _ page = RView page
 
 --------------------------------------------------------------------------------
@@ -154,7 +153,7 @@ runRouteLoc
   -> handler 
   -> Either RoutingError page
 runRouteLoc loc nested handler = note FailedMatch $ 
-  routeLoc loc $ mkRouter (RouteProxy :: RouteProxy layout) handler
+  routeLoc loc $ mkRouter (RouteProxy :: _ layout) handler
 
 route 
   :: forall layout page handler uri

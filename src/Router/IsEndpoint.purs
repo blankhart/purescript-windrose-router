@@ -1,10 +1,9 @@
-module Servant.Routing.IsEndpoint (
+module Windrose.Router.IsEndpoint (
   class IsEndpoint
 ) where 
 
 import Prim.TypeError (class Fail, Text)
-import Servant.API (type (:>), kind Route)
-import Servant.Routing.API
+import Windrose.Router.API (type (:>), type (:<|>), V, kind Route)
 
 --------------------------------------------------------------------------------
 -- IsEndpoint 
@@ -15,7 +14,7 @@ import Servant.Routing.API
 -- | name _ = reflectSymbol (SProxy :: _ n)
 class IsEndpoint (route :: Route) (name :: Symbol) | route -> name
 
-instance viewIsEndpoint :: IsEndpoint (VIEW name) name 
+instance viewIsEndpoint :: IsEndpoint (V name) name 
 
 else instance seqIsEndpoint 
   :: ( IsEndpoint b s )

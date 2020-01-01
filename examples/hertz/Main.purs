@@ -2,22 +2,21 @@
 -- cf. https://github.com/utkarshkukreti/purescript-hertz/blob/master/examples/Router.purs
 -- which is visible at https://hertz-examples.netlify.com/router
 
-module Example.Main where
+module Example.Hertz.Main where
 
-import Prelude
-
-import Data.Either (Either(..), either)
+import Data.Either (either)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (drop) as S
 import Effect (Effect)
 import Hertz as H
 import Hertz.Router (push, replace, subscribe, Mode(..), Url) as R
-import Servant.Routing
+import Prelude (Unit, identity, pure, show, unit, ($), (<$>), (<>), (==), (>>>))
+import Windrose.Router (class ToLocation, type (:<|>), type (:>), C, Location(..), P, Q, RouteProxy(..), V, allLinks, fromLocation, mkRoutable, route, toLocation)
 
 -- The 'Renderer' is the framework's rendering function.  It is represented
 -- here as a data type (a higher-order function) so that the result of 
 -- running the router can be cached, and doesn't need to be run on every
--- render.  There is nothing specific to purescript-servant-routing here.
+-- render.  There is nothing specific to purescript-windrose-router here.
 newtype Renderer = Renderer (H.Render Unit State Message)
 
 -- The 'State' is the application state and stores the current URL and  
@@ -34,13 +33,13 @@ instance wrapperToLocation :: ToLocation UrlWrapper where
 -- The only action taken by this application is to change the route.
 data Message = Navigate UrlWrapper
 
--- Our routes are defined through a Servant-style typelevel API.
+-- Our routes are defined through a Windrose-style typelevel API.
 -- Nested routes are permitted where they make sense, as in this example
 -- which branches after "posts".
 type ExampleApi =
-        VIEW "index"
-  :<|>  S "posts" :> (  QPs ( sortBy :: Maybe String ) :> VIEW "postIndex"
-                  :<|>  CAP "id" Int :> S "edit" :> VIEW "postEdit")
+        V "index"
+  :<|>  P "posts" :> (  Q ( sortBy :: Maybe String ) :> V "postIndex"
+                  :<|>  C "id" Int :> P "edit" :> V "postEdit")
 
 -- Link and handler records that work with this API have the type (for some 'a')
 -- { index :: a, postIndex :: { sortBy :: Maybe String } -> a, postEdit :: Int -> a }

@@ -1,21 +1,31 @@
 {
-  "name": "purescript-servant-routing",
+  "name": "purescript-windrose-router",
   "private": true,
   "scripts": {
     "postinstall": "bower install",
-    "build:example": "pulp build --include example --main Example.Main --to example/main.js",
-    "run:example": "yarn build:example && parcel example/index.html"    
+    "example:halogen:build": "pulp build --include examples/halogen --main Example.Halogen.Main --to examples/halogen/output/main.js",
+    "example:halogen:run": "yarn example:halogen:build && parcel examples/halogen/index.html",    
+    "example:hertz:build": "pulp build --include examples/hertz --main Example.Hertz.Main --to examples/hertz/output/main.js",
+    "example:hertz:run": "yarn example:hertz:build && parcel examples/hertz/index.html"    
   },
-  "devDependencies": {
-    "bower": "^1.8.2",
-    "inferno": "^6.2.1",
-    "inferno-vnode-flags": "^6.2.1",
-    "parcel-bundler": "1.12.3",
-    "pulp": "^12.2.0",
-    "purescript": "^0.12.0",
-    "purescript-psa": "^0.6.0"
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/blankhart/purescript-windrose-router.git"
   },
+  "bugs": {
+    "url": "https://github.com/blankhart/purescript-windrose-router/issues"
+  },    
   "dependencies": {
     "purs": "^0.3.0"
+  },
+  "devDependencies": {
+    "bower": "^1.8.8",
+    "inferno": "^6.2.1",
+    "inferno-vnode-flags": "^6.2.1",
+    "parcel-bundler": "^1.12.0",
+    "pulp": "^13.0.0",
+    "purescript": "^0.13.0",
+    "purescript-psa": "^0.7.3",
+    "spago": "^0.13.0"
   }
 }

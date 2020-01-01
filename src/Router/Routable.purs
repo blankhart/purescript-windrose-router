@@ -1,4 +1,4 @@
-module Servant.Routing.Routable (
+module Windrose.Router.Routable (
   Routable, 
   mkRoutable, 
   class Canonicalize,
@@ -8,8 +8,7 @@ module Servant.Routing.Routable (
 ) where 
 
 import Prim.TypeError (class Fail, Text, Above)
-import Servant.API (type (:>), kind Route, RouteProxy(..))
-import Servant.Routing.API (type (:<|>), NIL)
+import Windrose.Router.API (type (:>), type (:<|>), NIL, kind Route, RouteProxy(..))
 
 --------------------------------------------------------------------------------
 -- Routable

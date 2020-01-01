@@ -1,4 +1,4 @@
-module Servant.Routing.Location where
+module Windrose.Router.Location where
 
 import Prelude
 

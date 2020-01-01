@@ -19,8 +19,6 @@ type ExampleApi =
   :<|>  P "link-b" :> V "linkB"
   :<|>  P "link-c" :> V "linkC"
 
-type Renderer = forall act m. State -> H.ComponentHTML act () m
-
 -- Canonicalize the typelevel API, which undoes nesting.
 -- This should be unnecessary in this case because the 
 -- sample API is simple and already in canonical form.
@@ -39,18 +37,33 @@ links :: forall api links
   => links
 links = W.allLinks api
 
+
+{-
+handlers :: forall api handlers 
+  .  W.Canonicalize ExampleApi api 
+  => W.HasRouter api String handlers 
+  => handlers
+
+Error:
+
+Could not match type
+
+    { index :: String
+    , linkA :: String
+    , linkB :: String
+    , linkC :: String
+    }
+
+  with type
+
+    handlers0
+-}
 handlers :: 
   { index :: String
   , linkA :: String
   , linkB :: String
   , linkC :: String
   }
-{- 
-handlers :: forall api handlers 
-  .  W.Canonicalize ExampleApi api 
-  => W.HasRouter api String handlers 
-  => links
--}
 handlers =
   { index: "Index (no hash)"
   , linkA: "Link A"
@@ -71,7 +84,10 @@ data Query a = ChangeRoute String a
 -- parent cache and dispatch on some representation of the route.
 -- 
 -- We cannot use a type synonym if we cache the rendering function
--- because circular type synonyms are illegal.
+-- because the `render` type signature refers to `State` and 
+-- circular type synonyms are illegal.
+type Renderer = forall act m. State -> H.ComponentHTML act () m
+
 newtype State = State
   { renderer :: Renderer 
   , history :: Array String 

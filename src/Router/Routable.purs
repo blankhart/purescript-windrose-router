@@ -10,25 +10,26 @@ module Windrose.Router.Routable (
 import Prim.TypeError (class Fail, Text, Above)
 import Windrose.Router.API (type (:>), type (:<|>), NIL, kind Route, RouteProxy(..))
 
---------------------------------------------------------------------------------
--- Routable
---------------------------------------------------------------------------------
-
+-- | A wrapper for a token representing the structure of the normalized API.
 newtype Routable api = Routable (RouteProxy api)
 
+-- | A smart constructor for a normalized version of the typelevel API
+-- | specified by the user.
 mkRoutable 
   :: forall nested api . Canonicalize nested api 
   => RouteProxy nested -> Routable api 
 mkRoutable _ = Routable (RouteProxy :: RouteProxy api)
 
---------------------------------------------------------------------------------
--- Distribute (internal)
---------------------------------------------------------------------------------
-
+-- | An internal combinator used when computing a normalized type.
+-- | Users of the library should not refer to this combinator,
+-- | even though it must be exported due to transitive export
+-- | restrictions.
 foreign import data EMPTY :: Route
 
 type BadNestingError = Text "Invalid nesting in the definition of the API.  Endpoints must branch to the right.  Try adjusting parentheses."
 
+-- | Determine a type in which nested combinators have been removed
+-- | by distributing the stem of the path over sub-paths.
 class Distribute (nested :: Route) (prior :: Route) (distributed :: Route) | nested prior -> distributed
 
 instance distributeBadLeftAltCons
@@ -66,12 +67,10 @@ else instance distributeEMPTY
 else instance distributePrior
   :: Distribute x p (p :> x)
 
--- | TODO: Custom type error if the user passes NIL
+-- TODO: Custom type error if the user passes NIL
 
---------------------------------------------------------------------------------
--- Reassociate
---------------------------------------------------------------------------------
-
+-- | Determine a type in which the combinators have 
+-- | been rearranged to associate to the right.
 class Reassociate (i :: Route) (o :: Route) | i -> o
 
 instance reassociateLeftSeq
@@ -101,10 +100,8 @@ else instance reassociateAltEnd
 else instance reassociateSegment
   :: Reassociate a a 
 
---------------------------------------------------------------------------------
--- Canonicalize (internal)
---------------------------------------------------------------------------------
-
+-- | Determine the canonical type in which combinators have
+-- | been unnested and rearranged to associate to the right.
 class Canonicalize (from :: Route) (to :: Route) | from -> to
 
 instance routableCanonicalize 

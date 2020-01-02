@@ -23,7 +23,8 @@ yarn run:example:hertz    # run the example
 Alternatively:
 
 ```bash
-yarn install              # also installs spago dependencies
+yarn install
+yarn spago install        # install spago dependencies
 yarn spago build          # builds project
 yarn spago test           # runs the tests
 ```

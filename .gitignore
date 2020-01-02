@@ -4,6 +4,7 @@
 /**/.psc*
 /**/.purs*
 /**/.spago
+/**/.vscode
 !/.gitignore
 !/.eslintrc.json
 !/.travis.yml

@@ -32,11 +32,11 @@ yarn spago test           # runs the tests
 
 Usage starts by defining a typelevel API with named endpoints.  Route combinators are single letter abbreviations that follow this mnemonic:
 
-* `P` is the `path` combinator representing a string.
-* `C` is the `capture` combinator for capturing a value.
-* `M` is the `capture many` combinator for capturing an array of values.
-* `Q` is the `query string` combinator translating a record to a query.
-* `V` is the `view` combinator, used to name an endpoint.
+* `P` is the *path segment* combinator representing a string.
+* `C` is the *capture* combinator for capturing a value.
+* `M` is the *capture many* combinator for capturing an array of values.
+* `Q` is the *query string* combinator translating a record to a query.
+* `V` is the *view* combinator used to name an endpoint.
 
 For example, from `tests/Test/Main.purs`:
 

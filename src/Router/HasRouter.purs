@@ -1,4 +1,9 @@
-module Windrose.Router.HasRouter where
+module Windrose.Router.HasRouter (
+  route, 
+  class HasRouter, 
+  mkRouter, 
+  Router
+) where
 
 import Prelude
 import Windrose.Router.API (type (:<|>), type (:>), C, M, NIL, P, Q, RouteProxy(..), V, kind Route)
@@ -22,10 +27,7 @@ import Prim.RowList (class RowToList)
 import Record as Record
 import Type.Data.RowList (RLProxy)
 
---------------------------------------------------------------------------------
--- A 'Router' contains the information necessary to execute a handler.
---------------------------------------------------------------------------------
-
+-- | A `Router page` contains the information necessary to execute a handler.
 data Router page
   = RAlt (Router page) (Router page)
   | RCapture (String -> Maybe (Router page))
@@ -34,14 +36,19 @@ data Router page
   | RPathComponent String (Router page)
   | RView page
 
---------------------------------------------------------------------------------
--- 'HasRouter' builds a 'Router'.
---------------------------------------------------------------------------------
-
+-- | `HasRouter` instances use the `layout` to build a `Router page`,
+-- | which is used internally by `route` to interpret a `handler`. 
+-- | 
+-- | The user specifies endpoints through the typelevel DSL, which are 
+-- | canonicalized and processed into a `layout`.
+-- | 
+-- | Each routable `layout` corresponds to a user-specified record of type `handler`.
+-- |   
+-- | Each field of the `handler` record is a function accepting capture and
+-- | query parameter arguments and producing a value of type `page`.
 class HasRouter (layout :: Route) (page :: Type) (handler :: Type) | layout page -> handler where
   mkRouter :: RouteProxy layout -> handler -> Router page
 
--- | Route sum
 instance hasRouterRouteSumNil
   ::  ( HasRouter endpoint page viewer
       , IsEndpoint endpoint name
@@ -68,7 +75,6 @@ else instance hasRouterRouteSumCons
         (mkRouter (RouteProxy :: RouteProxy endpoint) (Record.get field handler)) 
         (mkRouter (RouteProxy :: RouteProxy sublayout) (Record.delete field handler))
 
--- | P
 else instance hasRouterPathComponent
   ::  ( HasRouter sublayout page handler
       , IsSymbol s
@@ -77,7 +83,6 @@ else instance hasRouterPathComponent
   mkRouter _ handler = RPathComponent (reflectSymbol (SProxy :: SProxy s)) $ 
     mkRouter (RouteProxy :: _ sublayout) handler
 
--- | C
 else instance hasRouterCapture
   ::  ( HasRouter sublayout page handler
       , IsSymbol s
@@ -87,7 +92,6 @@ else instance hasRouterCapture
   mkRouter _ capture = RCapture $ fromUrlPiece >=> \a -> 
     pure $ mkRouter (RouteProxy :: _ sublayout) (capture a)
 
--- | M
 else instance hasRouterCaptureMany
   ::  ( HasRouter sublayout page handler
       , IsSymbol s
@@ -97,7 +101,6 @@ else instance hasRouterCaptureMany
   mkRouter _ captureMany = RCaptureMany $ traverse fromUrlPiece >=> \arr -> 
     pure $ mkRouter (RouteProxy :: _ sublayout) (captureMany arr)
 
--- | Q 
 else instance hasRouterQueryString
   ::  ( HasRouter sublayout page handler
       , RowToList params paramsRL
@@ -108,7 +111,6 @@ else instance hasRouterQueryString
     queryRecord <- fromQueryPairs pairs
     pure $ mkRouter (RouteProxy :: _ sublayout) (handler queryRecord)
 
--- | V
 else instance hasRouterView
   :: ( IsSymbol sym ) => HasRouter (V sym) page page where 
   mkRouter _ page = RView page
@@ -117,9 +119,10 @@ else instance hasRouterView
 -- Routing
 --------------------------------------------------------------------------------
 
--- | Run a computed 'Router page' on a 'Location' so as to produce a 'page'.
--- | Fail if the 'Location' does not match the 'Routable' used to produce the 
--- | 'Router page'.
+-- | Run a computed `Router page` on a `Location` to produce a `page`.
+-- | 
+-- | Fails if the `Location` does not match any endpoint
+-- | in the canonical API used to produce the `Router page`.
 routeLoc :: forall page . Location -> Router page -> Maybe page
 routeLoc location@(Location loc) r = case r of
   RAlt a b -> 
@@ -145,6 +148,7 @@ routeLoc location@(Location loc) r = case r of
 -- Runners
 --------------------------------------------------------------------------------
 
+-- | Run a `handler` record over a `Location` to produce a `page`. 
 runRouteLoc 
   :: forall layout page handler
    . HasRouter layout page handler
@@ -155,6 +159,12 @@ runRouteLoc
 runRouteLoc loc nested handler = note FailedMatch $ 
   routeLoc loc $ mkRouter (RouteProxy :: _ layout) handler
 
+-- | Run a `handler` record over a `uri` to produce a `page`. 
+-- | 
+-- | Errors if there is a failure to parse the `uri` into valid
+-- | segments via the type's `toLocation` instance, or to match
+-- | the `uri` against an endpoint in the canonical API specified 
+-- | by the `layout`.
 route 
   :: forall layout page handler uri
    . HasRouter layout page handler

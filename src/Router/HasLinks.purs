@@ -1,4 +1,10 @@
-module Windrose.Router.HasLinks where 
+module Windrose.Router.HasLinks (
+  Link, 
+  allLinks, 
+  allLinksWith, 
+  class HasLinks, 
+  mkLinks
+) where 
 
 import Prelude
 
@@ -54,7 +60,6 @@ allLinksWith toAction _ = mkLinks (RouteProxy :: RouteProxy layout) toAction ""
 class HasLinks (layout :: Route) (action :: Type) (links :: Type) | layout action -> links where
   mkLinks :: RouteProxy layout -> (Link -> action) -> Link -> links
 
--- | Route sum
 instance hasLinksRouteSumNil
   ::  ( HasLinks endpoint action link
       , IsEndpoint endpoint name
@@ -80,7 +85,6 @@ else instance hasLinksRouteSumCons
     (mkLinks (RouteProxy :: _ endpoint) toAction link) 
     (mkLinks (RouteProxy :: _ sublayout) toAction link)
 
--- | P
 else instance hasLinksPathComponent
   ::  ( HasLinks sublayout action links
       , IsSymbol s
@@ -90,7 +94,6 @@ else instance hasLinksPathComponent
     mkLinks (RouteProxy :: _ sublayout) toAction 
       (appendPathSegment (reflectSymbol (SProxy :: SProxy s)) link)
  
--- | C
 else instance hasLinksCapture
   ::  ( HasLinks sublayout action links
       , IsSymbol s
@@ -101,7 +104,6 @@ else instance hasLinksCapture
     mkLinks (RouteProxy :: _ sublayout) toAction 
       (appendPathSegment (toUrlPiece a) link)
 
--- | M
 else instance hasLinksCaptureMany
   ::  ( HasLinks sublayout action links
       , IsSymbol s
@@ -112,7 +114,6 @@ else instance hasLinksCaptureMany
     mkLinks (RouteProxy :: _ sublayout) toAction 
       (foldl (\l c -> appendPathSegment (toUrlPiece c) l) link captures)
 
--- | Q
 else instance hasLinksQueryString
   ::  ( HasLinks sublayout action links
       , RowToList params paramsRL
@@ -123,7 +124,6 @@ else instance hasLinksQueryString
     mkLinks (RouteProxy :: _ sublayout) toAction
       (appendQueryString (toQueryPairs (QueryParams params)) link)
 
--- | V
 else instance hasLinksView
   ::  ( IsSymbol sym ) => HasLinks (V sym) action action where 
   mkLinks _ toAction link = toAction link

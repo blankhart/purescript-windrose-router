@@ -1,4 +1,10 @@
-module Windrose.Router.Location where
+module Windrose.Router.Location (
+  Location(..),
+  class FromLocation,
+  fromLocation,
+  class ToLocation,
+  toLocation
+) where
 
 import Prelude
 
@@ -9,11 +15,8 @@ import Data.String.NonEmpty as NES
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..))
 
---------------------------------------------------------------------------------
--- 'Location' is used to split the path and query of a relative URI into 
--- components more easily consumed by the router.
---------------------------------------------------------------------------------
-
+-- | 'Location' is used to split the path and query of a relative URI into 
+-- | components more easily consumed by the router.
 newtype Location = Location
   { path  :: Array String
   , query :: Array (Tuple String String)

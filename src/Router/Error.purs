@@ -1,4 +1,6 @@
-module Windrose.Router.Error where
+module Windrose.Router.Error (
+  RoutingError(..)
+) where
 
 import Prelude (class Eq, class Show)
 

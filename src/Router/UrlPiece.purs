@@ -1,4 +1,9 @@
-module Windrose.Router.UrlPiece where 
+module Windrose.Router.UrlPiece (
+  class FromUrlPiece, 
+  fromUrlPiece, 
+  class ToUrlPiece, 
+  toUrlPiece
+) where 
 
 import Data.Int as Int
 import Data.Maybe (Maybe(..))

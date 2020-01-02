@@ -39,24 +39,44 @@ links = W.allLinks api
 
 
 {-
+The type of the handler record cannot be specified in the same manner 
+as the type of the links record, i.e. as:
+
 handlers :: forall api handlers 
   .  W.Canonicalize ExampleApi api 
   => W.HasRouter api String handlers 
   => handlers
 
-Error:
+That is, attempting to do this will produce this compiler error: 
 
-Could not match type
+  Could not match type
 
-    { index :: String
-    , linkA :: String
-    , linkB :: String
-    , linkC :: String
-    }
+      { index :: String
+      , linkA :: String
+      , linkB :: String
+      , linkC :: String
+      }
 
-  with type
+    with type
 
-    handlers0
+      handlers0
+
+The functional dependency constraints in the type signature ensure
+that these types are in fact equal, but the Purescript compiler 
+will not unify a rigid type variable with any type other than itself.
+More specifically, `handlers` is a rigid type variable because it is 
+behind a `forall`.  The Purescript compiler constructs `handlers0`  
+as a placeholder type to stand in for the concrete type that it expects
+the caller to specify.  Although the constraints will not allow a caller
+to use any type other than the record type above, the compiler's type
+checker does not include machinery that would recognize and allow this.
+(Explanation credit to Nate Faubion; any mistakes here are my own.)
+
+The compiler can infer the type of the handler record if it is left 
+unspecified.  This will result in a compiler warning if the record is 
+defined at the  top level, though not if it is defined as a `let` binding
+inside a function.  Usually the handler record will have only one 
+usage site, however, as in this example.
 -}
 handlers :: 
   { index :: String

@@ -1,4 +1,16 @@
-module Windrose.Router.QueryPairs where
+module Windrose.Router.QueryPairs (
+  QueryParams(..), 
+  QueryPairs(..), 
+  QueryPair, 
+  toQueryPairs, 
+  fromQueryPairs, 
+  FoldFromQueryPairs, 
+  FoldToQueryPairs,
+  class PartialFromQueryPairs,
+  partialFromQueryPairs,
+  class PartialToQueryPairs,
+  partialToQueryPairs
+) where
 
 import Prelude (class Monoid, class Semigroup, bind, const, map, mempty, pure, ($), (<<<), (<>), (==))
 import Windrose.Router.UrlPiece (class FromUrlPiece, class ToUrlPiece, fromUrlPiece, toUrlPiece)

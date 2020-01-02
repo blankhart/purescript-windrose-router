@@ -3,6 +3,9 @@
   "private": true,
   "scripts": {
     "postinstall": "bower install",
+    "docs:build": "pulp docs",
+    "docs:index:run": "xdg-open generated-docs/html/index.html&", 
+    "docs:windrose:run": "xdg-open generated-docs/html/Windrose.Router.html&",
     "example:halogen:build": "pulp build --include examples/halogen --main Example.Halogen.Main --to examples/halogen/output/main.js",
     "example:halogen:run": "yarn example:halogen:build && parcel examples/halogen/index.html",    
     "example:hertz:build": "pulp build --include examples/hertz --main Example.Hertz.Main --to examples/hertz/output/main.js",

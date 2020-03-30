@@ -1,7 +1,7 @@
 { name =
     "windrose-router"
 , dependencies =
-    [ "aff-coroutines", "effect", "console", "halogen", "heterogeneous", "psci-support", "strings", "strongcheck" ]
+    [ "aff-coroutines", "effect", "console", "halogen", "heterogeneous", "psci-support", "quickcheck", "strings" ]
 , license = 
     "MIT"
 , packages =
@@ -11,5 +11,5 @@
 , sources =
     [ "src/**/*.purs", "test/**/*.purs" ]
 , version = 
-    "v0.1.0"
+    "v0.1.1"
 }

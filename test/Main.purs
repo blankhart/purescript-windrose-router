@@ -6,8 +6,11 @@ import Data.Either (Either(..))
 import Data.String (joinWith)
 import Data.Tuple (Tuple(..))
 import Effect.Console (log)
-import Test.StrongCheck (assert, (===), quickCheck)
+import Test.QuickCheck (class Testable, (===), quickCheck, quickCheck')
 import Windrose.Router (type (:<|>), type (:>), C, M, P, Q, V, RouteProxy(..), allLinks, mkRoutable, route)
+
+assert :: forall prop . Testable prop => prop -> Effect Unit
+assert = quickCheck' 1
 
 -- Main 
 

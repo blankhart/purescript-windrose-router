@@ -6,7 +6,7 @@ This is a routing library for front-end web applications.  It provides a [Servan
 
 Like [`purescript-routing-duplex`](https://github.com/natefaubion/purescript-routing-duplex), this library abstracts away the parsing and printing of URLs to ensure at compile-time they are always in sync. But in this library the user specifies the routes through a typelevel DSL, rather than in an intermediate data type representing the routes and a codec interpreting that type.
 
-This project is inspired by the router used in [Miso](https://github.com/dmjio/miso), a Haskell web framework.  The [`purescript-kushikatsu`](https://github.com/justinwoo/purescript-kushikatsu) router has a similar focus with a different DSL and usage pattern.  This library uses type combinators more akin to those in [`purescript-servant`](https://github.com/f-o-a-m/purescript-servant) and [`purescript-trout`](https://github.com/owickstrom/purescript-trout).  
+This project is inspired by the router used in [Miso](https://github.com/dmjio/miso), a Haskell web framework.  The [`purescript-kushikatsu`](https://github.com/justinwoo/purescript-kushikatsu) router has a similar focus with a different DSL and usage pattern.  This library uses type combinators more akin to those in [`purescript-servant`](https://github.com/f-o-a-m/purescript-servant) and [`purescript-trout`](https://github.com/owickstrom/purescript-trout).
 
 ## Installation
 

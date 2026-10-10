@@ -6,6 +6,7 @@ import Data.Either (Either(..))
 import Data.String (joinWith)
 import Data.Tuple (Tuple(..))
 import Effect.Console (log)
+import Partial.Unsafe (unsafeCrashWith)
 import Test.QuickCheck (class Testable, (===), quickCheck, quickCheck')
 import Windrose.Router (type (:<|>), type (:>), C, M, P, Q, V, RouteProxy(..), allLinks, mkRoutable, route)
 
@@ -20,6 +21,8 @@ main = do
   checkReadMeTests
   log "purescript-routing tests"
   checkPurescriptRoutingTests
+  log "Overlapping endpoint tests"
+  checkOverlappingTests
   
 -- purescript-routing tests
 
@@ -94,4 +97,23 @@ checkReadMeTests = do
   assert $ links.figures [1, 2, 3, 4] === "/figures/1/2/3/4"
 
   quickCheck $ \username -> 
-    route api handlers (links.profile username) === Right (handlers.profile username)
+    match (links.profile username) === Right (handlers.profile username)
+
+-- Overlapping endpoint tests
+
+type OverlappingApi =
+       P "item" :> C "first" String :> V "first"
+  :<|> P "item" :> C "second" String :> V "second"
+
+checkOverlappingTests :: Effect Unit
+checkOverlappingTests = do
+  let 
+    api = mkRoutable (RouteProxy :: _ OverlappingApi)
+    -- The second handler is only reached if routing tries the second 
+    -- endpoint after the first has already matched.
+    handlers = 
+      { first: \s -> "first: " <> s
+      , second: \_ -> unsafeCrashWith "second endpoint was tried after the first matched"
+      }
+    match = route api handlers
+  assert $ match "/item/x" === Right "first: x"

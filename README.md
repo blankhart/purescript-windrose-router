@@ -76,6 +76,10 @@ Each handler in the record must have the same return type.  For example, in an E
 
 The capture and query parameter arguments can be any type with a `FromUrlPiece` instance.
 
+`route api handlers` builds the router when it receives the handlers, and returns a function that only matches a `uri` against it.  Bind that partial application once, as `match` above, and reuse it.  Calling `route api handlers uri` fully applied rebuilds the router on every call.
+
+Endpoints are tried in the order they appear in the API, and the first one that matches wins.
+
 ### Links: `Windrose.Router.HasLinks.allLinks`
 
 The `allLinks` function produces a record of link generators accepting capture and query parameters, and returning a `Link` to the endpoint's URL.  `Link` is currently a type alias for `String`.  
@@ -100,7 +104,7 @@ These functions should satisfy the property that, for each endpoint in the user'
 
 ```purescript
   quickCheck $ \username ->
-    route api handlers (links.profile username) === Right (handlers.profile username)
+    match (links.profile username) === Right (handlers.profile username)
 ```
 
 ## Examples

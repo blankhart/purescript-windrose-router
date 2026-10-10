@@ -25,6 +25,7 @@ package:
     dependencies:
       - console
       - effect
+      - partial
       - quickcheck
 workspace:
   packageSet:

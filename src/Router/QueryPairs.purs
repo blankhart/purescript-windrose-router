@@ -17,15 +17,14 @@ import Windrose.Router.UrlPiece (class FromUrlPiece, class ToUrlPiece, fromUrlPi
 
 import Data.Array as Array
 import Data.Maybe (Maybe(..))
-import Data.Symbol (class IsSymbol, SProxy, reflectSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..), snd)
 import Heterogeneous.Folding (class FoldingWithIndex, class HFoldlWithIndex, class FoldlRecord, hfoldlWithIndex)
 import Prim.Row as Row
 import Prim.RowList (class RowToList)
 import Record.Builder (build, insert)
-import Type.Data.RowList (RLProxy(..))
-import Type.Proxy (Proxy)
+import Type.Proxy (Proxy(..))
 
 --------------------------------------------------------------------------------
 -- QueryPairs represents an array of key-value pairs in a query string.
@@ -57,7 +56,7 @@ class PartialFromQueryPairs a where
 instance maybeExtractQueryParam :: FromUrlPiece a => PartialFromQueryPairs (Maybe a) where 
   partialFromQueryPairs key (QueryPairs array) =
     let
-      splits = Array.partition (\(Tuple k v) -> k == key) array
+      splits = Array.partition (\(Tuple k _) -> k == key) array
     in
       case splits.yes of
         [] -> Just { valueHead : Nothing, queryTail : QueryPairs splits.no }
@@ -70,7 +69,7 @@ else instance arrayExtractQueryParam :: FromUrlPiece a => PartialFromQueryPairs 
   partialFromQueryPairs key (QueryPairs array) =
     let
       -- Uses a key=value rather than key[]=value encoding.
-      splits = Array.partition (\(Tuple k v) -> k == key) array
+      splits = Array.partition (\(Tuple k _) -> k == key) array
     in do 
       vs <- for splits.yes (fromUrlPiece <<< snd)
       Just { valueHead : vs, queryTail : QueryPairs splits.no }
@@ -78,7 +77,7 @@ else instance arrayExtractQueryParam :: FromUrlPiece a => PartialFromQueryPairs 
 else instance requiredExtractQueryParam :: FromUrlPiece a => PartialFromQueryPairs a where 
   partialFromQueryPairs key (QueryPairs array) =
     let
-      splits = Array.partition (\(Tuple k v) -> k == key) array
+      splits = Array.partition (\(Tuple k _) -> k == key) array
     in
       case splits.yes of
         [Tuple _ s] -> do
@@ -96,7 +95,7 @@ instance foldFromQueryPairs
       )
   =>  FoldingWithIndex 
         FoldFromQueryPairs 
-        (SProxy s) 
+        (Proxy s) 
         (QueryPairs -> Maybe (Record rin)) 
         (Proxy a) 
         (QueryPairs -> Maybe (Record rout)) 
@@ -111,13 +110,13 @@ fromQueryPairs :: forall params paramsRL
   => HFoldlWithIndex 
       FoldFromQueryPairs 
       (QueryPairs -> Maybe (Record ())) 
-      (RLProxy paramsRL) 
+      (Proxy paramsRL) 
       (QueryPairs -> Maybe (Record params))
   => QueryPairs
   -> Maybe (Record params)
 fromQueryPairs pairs = 
   let empty = const (Just {}) :: QueryPairs -> Maybe (Record ())
-  in hfoldlWithIndex FoldFromQueryPairs empty (RLProxy :: _ paramsRL) $ pairs
+  in hfoldlWithIndex FoldFromQueryPairs empty (Proxy :: _ paramsRL) $ pairs
 
 --------------------------------------------------------------------------------
 -- PartialToQueryPairs
@@ -144,7 +143,7 @@ instance foldToQueryPairs
   ::  ( PartialToQueryPairs a
       , IsSymbol sym
       ) 
-  =>  FoldingWithIndex FoldToQueryPairs (SProxy sym) QueryPairs a QueryPairs 
+  =>  FoldingWithIndex FoldToQueryPairs (Proxy sym) QueryPairs a QueryPairs 
   where
     foldingWithIndex FoldToQueryPairs sym acc a = 
       partialToQueryPairs (reflectSymbol sym) a <> acc

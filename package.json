@@ -1,15 +1,13 @@
 {
   "name": "purescript-windrose-router",
   "private": true,
+  "type": "module",
   "scripts": {
-    "postinstall": "bower install",
-    "docs:build": "pulp docs",
-    "docs:run": "yarn docs:build && xdg-open generated-docs/html/index.html&", 
-    "docs:windrose:run": "yarn docs:build && xdg-open generated-docs/html/Windrose.Router.html&",
-    "example:halogen:build": "pulp build --include examples/halogen --main Example.Halogen.Main --to examples/halogen/output/main.js",
-    "example:halogen:run": "yarn example:halogen:build && parcel examples/halogen/index.html",    
-    "example:hertz:build": "pulp build --include examples/hertz --main Example.Hertz.Main --to examples/hertz/output/main.js",
-    "example:hertz:run": "yarn example:hertz:build && parcel examples/hertz/index.html"    
+    "build": "spago build",
+    "test": "spago test",
+    "docs": "spago docs",
+    "example:halogen:build": "spago bundle -p windrose-router-example-halogen",
+    "example:halogen:run": "npm run example:halogen:build && esbuild --servedir=examples/halogen"
   },
   "repository": {
     "type": "git",
@@ -17,18 +15,10 @@
   },
   "bugs": {
     "url": "https://github.com/blankhart/purescript-windrose-router/issues"
-  },    
-  "dependencies": {
-    "purs": "^0.3.0"
   },
   "devDependencies": {
-    "bower": "^1.8.8",
-    "inferno": "^6.2.1",
-    "inferno-vnode-flags": "^6.2.1",
-    "parcel-bundler": "^1.12.4",
-    "pulp": "^13.0.0",
-    "purescript": "^0.13.0",
-    "purescript-psa": "^0.7.3",
-    "spago": "^0.14.0"
+    "esbuild": "^0.28.2",
+    "purescript": "^0.15.16",
+    "spago": "^1.0.4"
   }
 }

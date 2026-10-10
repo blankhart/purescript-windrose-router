@@ -3,11 +3,11 @@ module Windrose.Router.IsEndpoint (
 ) where 
 
 import Prim.TypeError (class Fail, Text)
-import Windrose.Router.API (type (:>), type (:<|>), V, kind Route)
+import Windrose.Router.API (type (:>), type (:<|>), V, Route)
 
 -- Example:
 -- name :: forall e n . IsEndpoint e n => IsSymbol n => RouteProxy e -> String 
--- name _ = reflectSymbol (SProxy :: _ n)
+-- name _ = reflectSymbol (Proxy :: _ n)
 class IsEndpoint (route :: Route) (name :: Symbol) | route -> name
 
 instance viewIsEndpoint :: IsEndpoint (V name) name 

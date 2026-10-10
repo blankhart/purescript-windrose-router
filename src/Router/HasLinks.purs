@@ -8,7 +8,7 @@ module Windrose.Router.HasLinks (
 
 import Prelude
 
-import Windrose.Router.API (type (:<|>), type (:>), C, M, NIL, P, Q, RouteProxy(..), V, kind Route)
+import Windrose.Router.API (type (:<|>), type (:>), C, M, NIL, P, Q, RouteProxy(..), V, Route)
 import Windrose.Router.IsEndpoint (class IsEndpoint)
 import Windrose.Router.QueryPairs (FoldToQueryPairs, QueryPairs(..), QueryParams(..), toQueryPairs)
 import Windrose.Router.Routable (Routable)
@@ -16,12 +16,13 @@ import Windrose.Router.UrlPiece (class ToUrlPiece, toUrlPiece)
 
 import Data.Foldable (foldl)
 import Data.String (joinWith)
-import Data.Symbol (SProxy(..), class IsSymbol, reflectSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Tuple (Tuple(..))
 import Heterogeneous.Folding (class FoldlRecord)
 import Prim.Row as Row
 import Prim.RowList (class RowToList)
 import Record as Record
+import Type.Proxy (Proxy(..))
 
 type Link = String
 
@@ -68,7 +69,7 @@ instance hasLinksRouteSumNil
       , IsSymbol name
       )
   => HasLinks (endpoint :<|> NIL) action (Record links) where
-  mkLinks _ toAction link = Record.insert (SProxy :: _ name)
+  mkLinks _ toAction link = Record.insert (Proxy :: _ name)
     (mkLinks (RouteProxy :: _ endpoint) toAction link) 
     {}
 
@@ -81,7 +82,7 @@ else instance hasLinksRouteSumCons
       , HasLinks sublayout action (Record sublinks)
       )
   => HasLinks (endpoint :<|> sublayout) action (Record links) where
-  mkLinks _ toAction link = Record.insert (SProxy :: _ name) 
+  mkLinks _ toAction link = Record.insert (Proxy :: _ name) 
     (mkLinks (RouteProxy :: _ endpoint) toAction link) 
     (mkLinks (RouteProxy :: _ sublayout) toAction link)
 
@@ -92,7 +93,7 @@ else instance hasLinksPathComponent
   => HasLinks (P s :> sublayout) action links where
   mkLinks _ toAction link = 
     mkLinks (RouteProxy :: _ sublayout) toAction 
-      (appendPathSegment (reflectSymbol (SProxy :: SProxy s)) link)
+      (appendPathSegment (reflectSymbol (Proxy :: Proxy s)) link)
  
 else instance hasLinksCapture
   ::  ( HasLinks sublayout action links

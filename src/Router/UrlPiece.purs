@@ -7,10 +7,10 @@ module Windrose.Router.UrlPiece (
 
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
+import Data.Number as Number
 import Data.String.NonEmpty (NonEmptyString)
 import Data.String.NonEmpty as NES
 import Prelude (identity, show, (>=>), (>>>))
-import Global as G
 
 --------------------------------------------------------------------------------
 -- ToUrlPiece
@@ -59,7 +59,5 @@ instance fromCaptureInt :: FromUrlPiece Int where
   fromUrlPiece = Int.fromString
 
 instance fromCaptureNumber :: FromUrlPiece Number where 
-  fromUrlPiece = G.readFloat >>> case _ of 
-    n | G.isFinite n -> Just n
-    _ -> Nothing
+  fromUrlPiece = Number.fromString
     

@@ -1,0 +1,31 @@
+package:
+  name: windrose-router
+  description: A typelevel frontend router
+  publish:
+    version: 0.1.1
+    license: MIT
+    location:
+      githubOwner: blankhart
+      githubRepo: purescript-windrose-router
+  dependencies:
+    - arrays
+    - control
+    - either
+    - foldable-traversable
+    - heterogeneous
+    - integers
+    - maybe
+    - numbers
+    - prelude
+    - record
+    - strings
+    - tuples
+  test:
+    main: Test.Main
+    dependencies:
+      - console
+      - effect
+      - quickcheck
+workspace:
+  packageSet:
+    registry: 81.4.0

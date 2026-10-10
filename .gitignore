@@ -16,3 +16,4 @@ package-lock.json
 /**/output/
 CLAUDE.md
 AGENTS.md
+/examples/halogen/index.js

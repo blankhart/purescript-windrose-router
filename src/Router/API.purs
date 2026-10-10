@@ -1,5 +1,5 @@
 module Windrose.Router.API (
-  kind Route, 
+  Route, 
   RouteProxy(..), 
   RouteSum, 
   RouteProduct, 
@@ -21,7 +21,7 @@ module Windrose.Router.API (
 -- | resolution and the requirement that the user construct a `Routable api` 
 -- | with a `Canonicalize` instance. An alternative design may be possible 
 -- | if and when the compiler supports kind polymorphism.
-foreign import kind Route
+data Route
 
 -- | A token representing a typelevel API.
 data RouteProxy (r :: Route) = RouteProxy
@@ -45,7 +45,7 @@ foreign import data C :: Symbol -> Type -> Route
 foreign import data M :: Symbol -> Type -> Route
 
 -- | Query string combinator.
-foreign import data Q :: #Type -> Route
+foreign import data Q :: Row Type -> Route
 
 -- | View combinator.
 foreign import data V :: Symbol -> Route 

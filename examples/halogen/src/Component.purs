@@ -113,7 +113,7 @@ newtype State = State
   , history :: Array String 
   }
 
-component :: forall i o m. H.Component HH.HTML Query i o m
+component :: forall i o m. H.Component Query i o m
 component =
   H.mkComponent
     { initialState: \_ -> State { renderer: render handlers.index, history: [] }

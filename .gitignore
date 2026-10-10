@@ -14,3 +14,5 @@ package-lock.json
 /**/generated-docs/
 /**/node_modules/
 /**/output/
+CLAUDE.md
+AGENTS.md

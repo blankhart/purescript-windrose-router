@@ -37,7 +37,7 @@ instance locFromLocation :: FromLocation Location where
 instance stringToLocation :: ToLocation String where 
   toLocation postAuthority = do
     let 
-      { before: preFragment, after: uriFragment } = breakPattern (S.Pattern "#") postAuthority 
+      { before: preFragment } = breakPattern (S.Pattern "#") postAuthority 
       { before: uriPath, after: uriQuery } = breakPattern (S.Pattern "?") preFragment
       path = S.split (S.Pattern "/") $ fromMaybe uriPath (S.stripPrefix (S.Pattern "/") uriPath) 
     query <- 

@@ -6,7 +6,7 @@ module Windrose.Router.HasRouter (
 ) where
 
 import Prelude
-import Windrose.Router.API (type (:<|>), type (:>), C, M, NIL, P, Q, RouteProxy(..), V, kind Route)
+import Windrose.Router.API (type (:<|>), type (:>), C, M, NIL, P, Q, RouteProxy(..), V, Route)
 import Windrose.Router.Error (RoutingError(..))
 import Windrose.Router.IsEndpoint (class IsEndpoint)
 import Windrose.Router.Location (class ToLocation, Location(..), toLocation)
@@ -15,17 +15,17 @@ import Windrose.Router.Routable (Routable)
 import Windrose.Router.UrlPiece (class FromUrlPiece, fromUrlPiece)
 
 import Control.Alt ((<|>))
-import Control.MonadZero (guard)
+import Control.Alternative (guard)
 import Data.Array as Array
 import Data.Either (Either(..), note)
 import Data.Maybe (Maybe(..))
-import Data.Symbol (SProxy(..), class IsSymbol, reflectSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Traversable (traverse)
 import Heterogeneous.Folding (class HFoldlWithIndex)
 import Prim.Row as Row
 import Prim.RowList (class RowToList)
 import Record as Record
-import Type.Data.RowList (RLProxy)
+import Type.Proxy (Proxy(..))
 
 -- | A `Router page` contains the information necessary to execute a handler.
 data Router page
@@ -57,7 +57,7 @@ instance hasRouterRouteSumNil
       )
   => HasRouter (endpoint :<|> NIL) page (Record handler) where
   mkRouter _ handler = 
-    let field = SProxy :: _ name
+    let field = Proxy :: _ name
     in mkRouter (RouteProxy :: RouteProxy endpoint) (Record.get field handler)
 
 else instance hasRouterRouteSumCons
@@ -70,7 +70,7 @@ else instance hasRouterRouteSumCons
       )
   => HasRouter (endpoint :<|> sublayout) page (Record handler) where
   mkRouter _ handler = 
-    let field = SProxy :: _ name
+    let field = Proxy :: _ name
     in RAlt
         (mkRouter (RouteProxy :: RouteProxy endpoint) (Record.get field handler)) 
         (mkRouter (RouteProxy :: RouteProxy sublayout) (Record.delete field handler))
@@ -80,7 +80,7 @@ else instance hasRouterPathComponent
       , IsSymbol s
       )
   => HasRouter (P s :> sublayout) page handler where
-  mkRouter _ handler = RPathComponent (reflectSymbol (SProxy :: SProxy s)) $ 
+  mkRouter _ handler = RPathComponent (reflectSymbol (Proxy :: Proxy s)) $ 
     mkRouter (RouteProxy :: _ sublayout) handler
 
 else instance hasRouterCapture
@@ -104,7 +104,7 @@ else instance hasRouterCaptureMany
 else instance hasRouterQueryString
   ::  ( HasRouter sublayout page handler
       , RowToList params paramsRL
-      , HFoldlWithIndex FoldFromQueryPairs (QueryPairs -> Maybe (Record ())) (RLProxy paramsRL) (QueryPairs -> Maybe (Record params)) 
+      , HFoldlWithIndex FoldFromQueryPairs (QueryPairs -> Maybe (Record ())) (Proxy paramsRL) (QueryPairs -> Maybe (Record params)) 
       ) 
   => HasRouter (Q params :> sublayout) page (Record params -> handler) where 
   mkRouter _ handler = RQueryParam $ \pairs -> do 
@@ -156,7 +156,7 @@ runRouteLoc
   -> Routable layout 
   -> handler 
   -> Either RoutingError page
-runRouteLoc loc nested handler = note FailedMatch $ 
+runRouteLoc loc _ handler = note FailedMatch $ 
   routeLoc loc $ mkRouter (RouteProxy :: _ layout) handler
 
 -- | Run a `handler` record over a `uri` to produce a `page`. 

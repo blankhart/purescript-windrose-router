@@ -1,7 +1,7 @@
 module Windrose.Router ( module Export ) where
 
 import Windrose.Router.API (
-  kind Route, 
+  Route, 
   RouteProxy(..), 
   type (:<|>), 
   type (:>), 

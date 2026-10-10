@@ -8,7 +8,7 @@ module Windrose.Router.Routable (
 ) where 
 
 import Prim.TypeError (class Fail, Text, Above)
-import Windrose.Router.API (type (:>), type (:<|>), NIL, kind Route, RouteProxy(..))
+import Windrose.Router.API (type (:>), type (:<|>), NIL, Route, RouteProxy(..))
 
 -- | A wrapper for a token representing the structure of the normalized API.
 newtype Routable api = Routable (RouteProxy api)

@@ -10,23 +10,13 @@ This project is inspired by the router used in [Miso](https://github.com/dmjio/m
 
 ## Installation
 
-Clone, then:
+The project builds with PureScript 0.15 and [spago](https://github.com/purescript/spago), both installed locally through npm. Clone, then:
 
 ```bash
-yarn install              # also installs bower dependencies
-yarn pulp build           # builds project
-yarn pulp test            # runs the tests
-yarn run:example:halogen  # run the example
-yarn run:example:hertz    # run the example
-```
-
-Alternatively:
-
-```bash
-yarn install
-yarn spago install        # install spago dependencies
-yarn spago build          # builds project
-yarn spago test           # runs the tests
+npm install                     # installs purs, spago and esbuild
+npx spago build                 # builds the library and the example
+npx spago test                  # runs the tests
+npm run example:halogen:run     # bundles the Halogen example and serves it
 ```
 
 ## Usage
@@ -39,7 +29,7 @@ Usage starts by defining a typelevel API with named endpoints.  Route combinator
 * `Q` is the *query string* combinator translating a record to a query.
 * `V` is the *view* combinator used to name an endpoint.
 
-For example, from `tests/Test/Main.purs`:
+For example, from `test/Main.purs`:
 
 ```purescript
 type ReadmeApi =
@@ -119,13 +109,9 @@ These functions should satisfy the property that, for each endpoint in the user'
 
 The `test` file is based on the data type API in the tests for the [`purescript-routing`](https://github.com/slamdata/purescript-routing) library, to facilitate comparison with a well-established router.  That setup is extended with quickcheck-style tests verifying the `route`/`Link` relationship.
 
-### Hertz
-
-The `examples/hertz` illustration is based on the router example in the [`purescript-hertz`](https://github.com/utkarshkukreti/purescript-hertz) framework.  This framework was chosen because it has a minimal Purescript dependency footprint and came with a well designed illustration of its routing capabilities.
-
 ### Halogen
 
-The `examples/halogen` illustration is based on the router example in the [`purescript-halogen`](https://github.com/slamdata/purescript-halogen) framework, specifically the example labeled [`driver-routing`](https://github.com/slamdata/purescript-halogen/tree/master/examples/driver-routing). This example does not have elaborate endpoints.
+The `examples/halogen` illustration is based on the router example in the [`purescript-halogen`](https://github.com/purescript-halogen/purescript-halogen) framework, specifically the example labeled [`driver-routing`](https://github.com/purescript-halogen/purescript-halogen/tree/master/examples/driver-routing). This example does not have elaborate endpoints.  Run it with `npm run example:halogen:run` and open the address esbuild prints.
 
 To avoid re-running the router on each render, the example uses the router to select a rendering function, which is then cached in the application state.  The framework `render` call just invokes the cached function.
 

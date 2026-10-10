@@ -1,0 +1,18 @@
+package:
+  name: windrose-router-example-halogen
+  dependencies:
+    - aff
+    - arrays
+    - effect
+    - either
+    - foldable-traversable
+    - halogen
+    - maybe
+    - prelude
+    - strings
+    - web-events
+    - web-html
+    - windrose-router
+  bundle:
+    module: Example.Halogen.Main
+    outfile: index.js

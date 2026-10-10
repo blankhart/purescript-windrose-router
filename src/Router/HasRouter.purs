@@ -14,7 +14,6 @@ import Windrose.Router.QueryPairs (QueryPairs(..), fromQueryPairs, FoldFromQuery
 import Windrose.Router.Routable (Routable)
 import Windrose.Router.UrlPiece (class FromUrlPiece, fromUrlPiece)
 
-import Control.Alt ((<|>))
 import Control.Alternative (guard)
 import Data.Array as Array
 import Data.Either (Either(..), note)
@@ -125,8 +124,11 @@ else instance hasRouterView
 -- | in the canonical API used to produce the `Router page`.
 routeLoc :: forall page . Location -> Router page -> Maybe page
 routeLoc location@(Location loc) r = case r of
-  RAlt a b -> 
-    routeLoc location a <|> routeLoc location b
+  -- `<|>` on `Maybe` would evaluate both sides, so match the 
+  -- alternatives explicitly to stop at the first endpoint that matches.
+  RAlt a b -> case routeLoc location a of
+    Nothing -> routeLoc location b
+    found -> found
   RCapture capture -> do 
     path <- Array.uncons loc.path
     router <- capture path.head
@@ -148,23 +150,16 @@ routeLoc location@(Location loc) r = case r of
 -- Runners
 --------------------------------------------------------------------------------
 
--- | Run a `handler` record over a `Location` to produce a `page`. 
-runRouteLoc 
-  :: forall layout page handler
-   . HasRouter layout page handler
-  => Location 
-  -> Routable layout 
-  -> handler 
-  -> Either RoutingError page
-runRouteLoc loc _ handler = note FailedMatch $ 
-  routeLoc loc $ mkRouter (RouteProxy :: _ layout) handler
-
 -- | Run a `handler` record over a `uri` to produce a `page`. 
 -- | 
 -- | Errors if there is a failure to parse the `uri` into valid
 -- | segments via the type's `toLocation` instance, or to match
 -- | the `uri` against an endpoint in the canonical API specified 
 -- | by the `layout`.
+-- |
+-- | The router is built once the `layout` and `handler` are supplied, so
+-- | bind the partial application `route layout handler` once and reuse it
+-- | for each `uri` rather than calling `route layout handler uri` each time.
 route 
   :: forall layout page handler uri
    . HasRouter layout page handler
@@ -173,6 +168,8 @@ route
   -> handler
   -> uri
   -> Either RoutingError page
-route layout handler uri = case toLocation uri of 
-  Just loc -> runRouteLoc loc layout handler
-  Nothing -> Left FailedParse
+route _ handler =
+  let router = mkRouter (RouteProxy :: _ layout) handler
+  in \uri -> case toLocation uri of 
+    Just loc -> note FailedMatch (routeLoc loc router)
+    Nothing -> Left FailedParse

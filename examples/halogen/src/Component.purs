@@ -5,7 +5,7 @@ module Example.Halogen.Component where
 import Prelude
 
 import Data.Array as A
-import Data.Either (either)
+import Data.Either (Either, either)
 import Data.Maybe (Maybe(..))
 import Halogen as H
 import Halogen.HTML as HH
@@ -91,6 +91,12 @@ handlers =
   , linkC: "Link C"
   }
 
+-- Build the router once.  `W.route api handlers` builds the router when
+-- the handlers are supplied, so binding the partial application here
+-- avoids rebuilding it on every navigation.
+match :: String -> Either W.RoutingError String
+match = W.route api handlers
+
 type Slot = H.Slot Query Void
 
 data Query a = ChangeRoute String a
@@ -150,7 +156,7 @@ handleQuery :: forall act o m a. Query a -> H.HalogenM State act () o m (Maybe a
 handleQuery = case _ of
   ChangeRoute path a -> do
     H.modify_ \(State st) -> State
-      { renderer: either (show >>> error404) render (W.route api handlers path)
+      { renderer: either (show >>> error404) render (match path)
       , history: st.history `A.snoc` path 
       }
     pure (Just a)

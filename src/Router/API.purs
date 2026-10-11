@@ -1,13 +1,17 @@
-module Windrose.Router.API (
-  Route, 
-  RouteProxy(..), 
-  RouteSum, 
-  RouteProduct, 
-  type (:<|>), 
-  type (:>), 
-  P, C, M, Q, V, 
-  NIL
-) where 
+module Windrose.Router.API
+  ( Route
+  , RouteProxy(..)
+  , RouteSum
+  , RouteProduct
+  , type (:<|>)
+  , type (:>)
+  , P
+  , C
+  , M
+  , Q
+  , V
+  , NIL
+  ) where
 
 -- | Kind for a typelevel DSL of single-page web application route endpoints.
 -- | 
@@ -48,7 +52,7 @@ foreign import data M :: Symbol -> Type -> Route
 foreign import data Q :: Row Type -> Route
 
 -- | View combinator.
-foreign import data V :: Symbol -> Route 
+foreign import data V :: Symbol -> Route
 -- TODO: Custom type error if V sym :> _ or if Q _ :> a and a /~ V sym
 
 -- | An internal combinator used when processing a normalized version 

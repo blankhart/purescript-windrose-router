@@ -7,7 +7,10 @@
     "test": "spago test",
     "docs": "spago docs",
     "example:halogen:build": "spago bundle -p windrose-router-example-halogen",
-    "example:halogen:run": "npm run example:halogen:build && esbuild --servedir=examples/halogen"
+    "example:halogen:run": "npm run example:halogen:build && esbuild --servedir=examples/halogen",
+    "format": "purs-tidy format-in-place 'src/**/*.purs' 'test/**/*.purs'",
+    "format:check": "purs-tidy check 'src/**/*.purs' 'test/**/*.purs'",
+    "validate": "npm run format:check && npm run test && npm run build"
   },
   "repository": {
     "type": "git",

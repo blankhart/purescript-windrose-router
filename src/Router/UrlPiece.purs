@@ -1,9 +1,9 @@
-module Windrose.Router.UrlPiece (
-  class FromUrlPiece, 
-  fromUrlPiece, 
-  class ToUrlPiece, 
-  toUrlPiece
-) where 
+module Windrose.Router.UrlPiece
+  ( class FromUrlPiece
+  , fromUrlPiece
+  , class ToUrlPiece
+  , toUrlPiece
+  ) where
 
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
@@ -22,7 +22,7 @@ class ToUrlPiece a where
 instance stringToCapture :: ToUrlPiece String where
   toUrlPiece = identity
 
-instance nesToCapture :: ToUrlPiece NonEmptyString where 
+instance nesToCapture :: ToUrlPiece NonEmptyString where
   toUrlPiece = NES.toString
 
 instance intToCapture :: ToUrlPiece Int where
@@ -32,7 +32,7 @@ instance numberToCapture :: ToUrlPiece Number where
   toUrlPiece = show
 
 instance booleanToCapture :: ToUrlPiece Boolean where
-  toUrlPiece = case _ of 
+  toUrlPiece = case _ of
     true -> "true"
     false -> "false"
 
@@ -40,24 +40,23 @@ instance booleanToCapture :: ToUrlPiece Boolean where
 -- FromUrlPiece
 --------------------------------------------------------------------------------
 
-class FromUrlPiece a where 
-  fromUrlPiece :: String -> Maybe a 
+class FromUrlPiece a where
+  fromUrlPiece :: String -> Maybe a
 
-instance fromCaptureString :: FromUrlPiece String where 
+instance fromCaptureString :: FromUrlPiece String where
   fromUrlPiece = identity >>> Just
 
-instance fromCaptureNonEmptyString :: FromUrlPiece NonEmptyString where 
+instance fromCaptureNonEmptyString :: FromUrlPiece NonEmptyString where
   fromUrlPiece = NES.fromString >=> Just
 
-instance fromCaptureBoolean :: FromUrlPiece Boolean where 
-  fromUrlPiece = case _ of 
+instance fromCaptureBoolean :: FromUrlPiece Boolean where
+  fromUrlPiece = case _ of
     "true" -> Just true
     "false" -> Just false
-    _ -> Nothing 
+    _ -> Nothing
 
-instance fromCaptureInt :: FromUrlPiece Int where 
+instance fromCaptureInt :: FromUrlPiece Int where
   fromUrlPiece = Int.fromString
 
-instance fromCaptureNumber :: FromUrlPiece Number where 
+instance fromCaptureNumber :: FromUrlPiece Number where
   fromUrlPiece = Number.fromString
-    

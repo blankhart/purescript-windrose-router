@@ -1,46 +1,44 @@
-module Windrose.Router ( module Export ) where
+module Windrose.Router (module Export) where
 
-import Windrose.Router.API (
-  Route, 
-  RouteProxy(..), 
-  type (:<|>), 
-  type (:>), 
-  P, C, M, Q, V
-) as Export
-
-import Windrose.Router.Error (
-  RoutingError(..)
-) as Export
-
-import Windrose.Router.HasLinks (
-  Link, 
-  allLinks, 
-  allLinksWith,
-  class HasLinks
-) as Export
-
-import Windrose.Router.HasRouter (
-  route,
-  class HasRouter
-) as Export
-
-import Windrose.Router.Location (
-  Location(..),
-  class FromLocation,
-  fromLocation,
-  class ToLocation,
-  toLocation
-) as Export
-
-import Windrose.Router.Routable (
-  Routable, 
-  mkRoutable,
-  class Canonicalize
-) as Export
-
-import Windrose.Router.UrlPiece (
-  class FromUrlPiece, 
-  fromUrlPiece, 
-  class ToUrlPiece, 
-  toUrlPiece
-) as Export
+import Windrose.Router.API
+  ( type (:<|>)
+  , type (:>)
+  , C
+  , M
+  , P
+  , Q
+  , Route
+  , RouteProxy(..)
+  , V
+  ) as Export
+import Windrose.Router.Error
+  ( RoutingError(..)
+  ) as Export
+import Windrose.Router.HasLinks
+  ( class HasLinks
+  , Link
+  , allLinks
+  , allLinksWith
+  ) as Export
+import Windrose.Router.HasRouter
+  ( class HasRouter
+  , route
+  ) as Export
+import Windrose.Router.Location
+  ( class FromLocation
+  , class ToLocation
+  , Location(..)
+  , fromLocation
+  , toLocation
+  ) as Export
+import Windrose.Router.Routable
+  ( class Canonicalize
+  , Routable
+  , mkRoutable
+  ) as Export
+import Windrose.Router.UrlPiece
+  ( class FromUrlPiece
+  , class ToUrlPiece
+  , fromUrlPiece
+  , toUrlPiece
+  ) as Export

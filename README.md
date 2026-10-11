@@ -4,6 +4,8 @@
 
 This is a routing library for front-end web applications.  It provides a [Servant](https://github.com/haskell-servant/servant)-style interface to the router matching and handling functionality, but not the hash-based/push-state driver functionality, in [`purescript-routing`](https://github.com/slamdata/purescript-routing).
 
+The driver is easy to wire in yourself. `route` returns a plain `String -> Either RoutingError page` function, so any source of URL changes can feed it: a `hashchange` or `popstate` listener of your own, or the `matchesWith` drivers in `Routing.Hash` and `Routing.PushState` from `purescript-routing`, which accept a parser of that shape. The [Halogen example](#halogen) shows a hash-based driver in a few lines.
+
 Like [`purescript-routing-duplex`](https://github.com/natefaubion/purescript-routing-duplex), this library abstracts away the parsing and printing of URLs to ensure at compile-time they are always in sync. But in this library the user specifies the routes through a typelevel DSL, rather than in an intermediate data type representing the routes and a codec interpreting that type.
 
 This project is inspired by the router used in [Miso](https://github.com/dmjio/miso), a Haskell web framework.  The [`purescript-kushikatsu`](https://github.com/justinwoo/purescript-kushikatsu) router has a similar focus with a different DSL and usage pattern.  This library uses type combinators more akin to those in [`purescript-servant`](https://github.com/f-o-a-m/purescript-servant) and [`purescript-trout`](https://github.com/owickstrom/purescript-trout).
@@ -116,6 +118,39 @@ The `test` file is based on the data type API in the tests for the [`purescript-
 ### Halogen
 
 The `examples/halogen` illustration is based on the router example in the [`purescript-halogen`](https://github.com/purescript-halogen/purescript-halogen) framework, specifically the example labeled [`driver-routing`](https://github.com/purescript-halogen/purescript-halogen/tree/master/examples/driver-routing). This example does not have elaborate endpoints.  Run it with `npm run example:halogen:run` and open the address esbuild prints.
+
+The driver is a `hashchange` listener in `examples/halogen/src/Main.purs`.  It strips everything up to and including the `#` from the new URL and sends the rest to the component as a `ChangeRoute` query:
+
+```purescript
+main :: Effect Unit
+main = HA.runHalogenAff do
+  body <- HA.awaitBody
+  io <- runUI RouteLog.component unit body
+
+  liftEffect do
+    listener <- DOM.eventListener $ HCE.fromEvent >>> traverse_ \event -> do
+      let hash = Str.drop 1 $ Str.dropWhile (_ /= '#') $ HCE.newURL event
+      launchAff_ $ void $ io.query $ H.mkTell $ RouteLog.ChangeRoute hash
+
+    DOM.addEventListener HCET.hashchange listener false <<< Window.toEventTarget =<< DOM.window
+```
+
+The component builds the router once and runs it on each `ChangeRoute`.  The links in the page come from `allLinks`, prefixed with `#` so that following one triggers the listener above:
+
+```purescript
+match :: String -> Either W.RoutingError String
+match = W.route api handlers
+
+handleQuery = case _ of
+  ChangeRoute path a -> do
+    H.modify_ \(State st) -> State
+      { renderer: either (show >>> error404) render (match path)
+      , history: st.history `A.snoc` path
+      }
+    pure (Just a)
+```
+
+A push-state driver has the same shape: listen for `popstate` (or use `Routing.PushState.matchesWith`) and pass the path and query string to `match`.
 
 To avoid re-running the router on each render, the example uses the router to select a rendering function, which is then cached in the application state.  The framework `render` call just invokes the cached function.
 

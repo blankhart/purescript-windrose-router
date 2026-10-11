@@ -1,6 +1,7 @@
 module Test.Main where
 
 import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
 import Data.String (joinWith)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
@@ -23,6 +24,8 @@ main = do
   checkPurescriptRoutingTests
   log "Overlapping endpoint tests"
   checkOverlappingTests
+  log "Root and optional query tests"
+  checkRootAndOptionalQueryTests
 
 -- purescript-routing tests
 
@@ -131,3 +134,41 @@ checkOverlappingTests = do
       }
     match = route api handlers
   assert $ match "/item/x" === Right "first: x"
+
+-- Root and optional query tests
+
+type RootApi =
+  V "index"
+    :<|> Q (page :: Maybe Int)
+    :> V "paged"
+    :<|> P "posts"
+    :> Q (sortBy :: Maybe String, tag :: Array String)
+    :> V "posts"
+
+checkRootAndOptionalQueryTests :: Effect Unit
+checkRootAndOptionalQueryTests = do
+  let
+    api = mkRoutable (RouteProxy :: _ RootApi)
+    links = allLinks api
+    handlers =
+      { index: "index"
+      , paged: \(q :: { page :: Maybe Int }) -> "paged: " <> show q.page
+      , posts: \(q :: { sortBy :: Maybe String, tag :: Array String }) ->
+          "posts: " <> show q.sortBy <> " " <> show q.tag
+      }
+    match = route api handlers
+
+  -- The root prints as "/", with or without a query.
+  assert $ links.index === "/"
+  assert $ links.paged { page: Just 2 } === "/?page=2"
+  assert $ links.paged { page: Nothing } === "/"
+
+  -- A query with nothing in it leaves no "?" behind.
+  assert $ links.posts { sortBy: Nothing, tag: [] } === "/posts"
+  assert $ links.posts { sortBy: Just "id", tag: [] } === "/posts?sortBy=id"
+
+  assert $ match links.index === Right "index"
+  assert $ match (links.posts { sortBy: Nothing, tag: [] })
+    === Right (handlers.posts { sortBy: Nothing, tag: [] })
+  assert $ match (links.posts { sortBy: Just "id", tag: [ "a", "b" ] })
+    === Right (handlers.posts { sortBy: Just "id", tag: [ "a", "b" ] })

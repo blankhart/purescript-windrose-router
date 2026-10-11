@@ -28,12 +28,16 @@ type Link = String
 appendPathSegment :: String -> Link -> Link
 appendPathSegment s path = path <> "/" <> s
 
+-- | The root has no path segments to print, and is "/".
+rooted :: Link -> Link
+rooted path = if path == "" then "/" else path
+
+-- | A query with no pairs, as when every parameter is `Nothing` or an
+-- | empty array, adds nothing to the link.
 appendQueryString :: QueryPairs -> Link -> Link
-appendQueryString (QueryPairs qps) path =
-  let
-    string = joinWith "&" $ map (\(Tuple k v) -> k <> "=" <> v) qps
-  in
-    path <> "?" <> string
+appendQueryString (QueryPairs qps) path = case qps of
+  [] -> path
+  _ -> rooted path <> "?" <> joinWith "&" (map (\(Tuple k v) -> k <> "=" <> v) qps)
 
 --------------------------------------------------------------------------------
 -- allLinks
@@ -126,4 +130,4 @@ else instance hasLinksQueryString ::
       (appendQueryString (toQueryPairs (QueryParams params)) link)
 
 else instance hasLinksView :: (IsSymbol sym) => HasLinks (V sym) action action where
-  mkLinks _ toAction link = toAction link
+  mkLinks _ toAction link = toAction (rooted link)

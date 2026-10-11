@@ -100,6 +100,8 @@ The default return type can be modified by passing `allLinksWith` a function of 
 
 The capture and query parameters may be any type with a `ToUrlPiece` instance.
 
+An endpoint at the root, such as a bare `V "index"`, links to `/`.  A query parameter of type `Maybe a` or `Array a` is optional, and a query in which every parameter is absent adds nothing to the link, not even the `?`.
+
 ## Laws
 
 These functions should satisfy the property that, for each endpoint in the user's API, running `route` on the link produced by `allLinks` always produces the same value as the corresponding handler.

@@ -8,8 +8,8 @@
     "docs": "spago docs",
     "example:halogen:build": "spago bundle -p windrose-router-example-halogen",
     "example:halogen:run": "npm run example:halogen:build && esbuild --servedir=examples/halogen",
-    "format": "purs-tidy format-in-place 'src/**/*.purs' 'test/**/*.purs'",
-    "format:check": "purs-tidy check 'src/**/*.purs' 'test/**/*.purs'",
+    "format": "purs-tidy format-in-place 'src/**/*.purs' 'test/**/*.purs' 'examples/**/*.purs'",
+    "format:check": "purs-tidy check 'src/**/*.purs' 'test/**/*.purs' 'examples/**/*.purs'",
     "validate": "npm run format:check && npm run test && npm run build"
   },
   "repository": {
@@ -22,6 +22,7 @@
   "devDependencies": {
     "esbuild": "^0.28.2",
     "purescript": "^0.15.16",
+    "purs-tidy": "0.11.1",
     "spago": "^1.0.4"
   }
 }

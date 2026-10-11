@@ -13,7 +13,7 @@ import Example.Halogen.Component as RouteLog
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
-import Web.Event.EventTarget (eventListener, addEventListener) as DOM
+import Web.Event.EventTarget (addEventListener, eventListener) as DOM
 import Web.HTML (window) as DOM
 import Web.HTML.Event.HashChangeEvent as HCE
 import Web.HTML.Event.HashChangeEvent.EventTypes as HCET

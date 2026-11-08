@@ -1,18 +1,67 @@
 module Test.Main where
 
+import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Data.Enum (toEnum)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith)
+import Data.String.CodePoints (codePointFromChar)
+import Data.String.CodePoints as CP
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Console (log)
 import Partial.Unsafe (unsafeCrashWith)
-import Prelude (Unit, discard, show, ($), (<$>), (<>), (==))
-import Test.QuickCheck (class Testable, quickCheck, quickCheck', (===))
+import Prelude (class Show, Unit, bind, discard, map, show, ($), (-), (<), (<$>), (<<<), (<>), (==), (>), (||))
+import Test.QuickCheck (class Arbitrary, class Testable, quickCheck, quickCheck', (===))
+import Test.QuickCheck.Gen (Gen, arrayOf, chooseInt, suchThat)
 import Windrose.Router (type (:<|>), type (:>), C, M, P, Q, RouteProxy(..), V, allLinks, mkRoutable, route)
 
 assert :: forall prop. Testable prop => prop -> Effect Unit
 assert = quickCheck' 1
+
+-- | Well-formed Unicode text that is heavy in characters a URL must escape.
+-- |
+-- | QuickCheck's own `String` can contain lone surrogates, which have no
+-- | UTF-8 encoding and so cannot survive a trip through a URL.
+newtype UrlText = UrlText String
+
+instance showUrlText :: Show UrlText where
+  show (UrlText s) = show s
+
+instance arbUrlText :: Arbitrary UrlText where
+  arbitrary = UrlText <<< joinWith "" <$> arrayOf piece
+    where
+    piece :: Gen String
+    piece = do
+      n <- chooseInt 0 2
+      if n == 0 then CP.singleton <$> codePoint
+      else map (\i -> fromMaybe "" (Array.index pool i)) (chooseInt 0 (Array.length pool - 1))
+
+    pool :: Array String
+    pool =
+      [ "/"
+      , "?"
+      , "&"
+      , "="
+      , "#"
+      , "%"
+      , "+"
+      , " "
+      , "%2F"
+      , "%zz"
+      , "%FF"
+      , "\x00e9"
+      , "\x4e2d"
+      , "\x1f600"
+      , "a"
+      , "Z"
+      , "0"
+      , "-"
+      , "."
+      ]
+
+    codePoint = map (fromMaybe (codePointFromChar 'x') <<< toEnum) $
+      chooseInt 0 0x10FFFF `suchThat` \c -> c < 0xD800 || c > 0xDFFF
 
 -- Main 
 
@@ -26,6 +75,8 @@ main = do
   checkOverlappingTests
   log "Root and optional query tests"
   checkRootAndOptionalQueryTests
+  log "Percent-encoding tests"
+  checkPercentEncodingTests
 
 -- purescript-routing tests
 
@@ -66,10 +117,10 @@ checkPurescriptRoutingTests = do
     link.foo 12.0 { welp: "'hi'", b: false }
       === "/foo/12.0?welp='hi'&b=false"
 
-  quickCheck $ \s ->
+  quickCheck $ \(UrlText s) ->
     handle (link.corge s) == Right (corge s)
 
-  quickCheck $ \(Tuple b s) ->
+  quickCheck $ \(Tuple b (UrlText s)) ->
     handle (link.bar b { bar: s }) == Right (bar b { bar: s })
 
 -- README tests
@@ -111,7 +162,7 @@ checkReadMeTests = do
   assert $ links.article_search { term: "ptolemy" } === "/article/search?term=ptolemy"
   assert $ links.figures [ 1, 2, 3, 4 ] === "/figures/1/2/3/4"
 
-  quickCheck $ \username ->
+  quickCheck $ \(UrlText username) ->
     match (links.profile username) === Right (handlers.profile username)
 
 -- Overlapping endpoint tests
@@ -172,3 +223,84 @@ checkRootAndOptionalQueryTests = do
     === Right (handlers.posts { sortBy: Nothing, tag: [] })
   assert $ match (links.posts { sortBy: Just "id", tag: [ "a", "b" ] })
     === Right (handlers.posts { sortBy: Just "id", tag: [ "a", "b" ] })
+
+-- Percent-encoding tests
+
+type EncodingApi =
+  P "signin" :> Q (return :: Maybe String) :> V "signin"
+    :<|> P "search"
+    :> Q (term :: Maybe String, flag :: Maybe String)
+    :> V "search"
+    :<|> P "games"
+    :> C "id" String
+    :> V "game"
+    :<|> P "tags"
+    :> M "tags" String
+    :> Q (one :: String, maybe :: Maybe String, many :: Array String)
+    :> V "tags"
+
+checkPercentEncodingTests :: Effect Unit
+checkPercentEncodingTests = do
+  let
+    api = mkRoutable (RouteProxy :: _ EncodingApi)
+    links = allLinks api
+    handlers =
+      { signin: \(q :: { return :: Maybe String }) -> "signin " <> show q.return
+      , search: \(q :: { term :: Maybe String, flag :: Maybe String }) ->
+          "search " <> show q.term <> " " <> show q.flag
+      , game: \(id :: String) -> "game " <> show id
+      , tags: \(ts :: Array String) (q :: { one :: String, maybe :: Maybe String, many :: Array String }) ->
+          "tags " <> show ts <> " " <> show q.one <> " " <> show q.maybe <> " " <> show q.many
+      }
+    match = route api handlers
+
+  -- Query names and values are percent-decoded, and `+` is a space.
+  assert $ match "/signin?return=%2Fgames%2Fnew" === Right (handlers.signin { return: Just "/games/new" })
+  assert $ match "/search?term=two+words" === Right (handlers.search { term: Just "two words", flag: Nothing })
+  assert $ match "/search?term=caf%C3%A9" === Right (handlers.search { term: Just "caf\x00e9", flag: Nothing })
+  assert $ match "/search?te%72m=x" === Right (handlers.search { term: Just "x", flag: Nothing })
+
+  -- Path segments are percent-decoded after splitting, and `+` is literal.
+  assert $ match "/games/caf%C3%A9" === Right (handlers.game "caf\x00e9")
+  assert $ match "/games/a%2Fb" === Right (handlers.game "a/b")
+  assert $ match "/games/a+b" === Right (handlers.game "a+b")
+
+  -- Only the first `?` and, in each pair, the first `=` are separators.
+  assert $ match "/signin?return=/games/new?form=x" === Right (handlers.signin { return: Just "/games/new?form=x" })
+  assert $ match "/search?term=a=b" === Right (handlers.search { term: Just "a=b", flag: Nothing })
+
+  -- A bare name has the value "", and empty pairs are skipped.
+  assert $ match "/search?flag" === Right (handlers.search { term: Nothing, flag: Just "" })
+  assert $ match "/search?term=x&flag" === Right (handlers.search { term: Just "x", flag: Just "" })
+  assert $ match "/search?term=x&" === Right (handlers.search { term: Just "x", flag: Nothing })
+  assert $ match "/search?&&term=x&&" === Right (handlers.search { term: Just "x", flag: Nothing })
+
+  -- Invalid escapes are kept, and invalid UTF-8 becomes U+FFFD.
+  assert $ match "/search?term=%zz" === Right (handlers.search { term: Just "%zz", flag: Nothing })
+  assert $ match "/search?term=100%" === Right (handlers.search { term: Just "100%", flag: Nothing })
+  assert $ match "/search?term=%FF" === Right (handlers.search { term: Just "\xfffd", flag: Nothing })
+  assert $ match "/games/%zz" === Right (handlers.game "%zz")
+
+  -- Links percent-encode captures and query values.
+  assert $ links.game "a/b?c" === "/games/a%2Fb%3Fc"
+  assert $ match (links.game "a/b?c") === Right (handlers.game "a/b?c")
+  assert $ links.search { term: Just "two words&more", flag: Nothing } === "/search?term=two%20words%26more"
+  assert $ links.signin { return: Just "/games/new?form=x" } === "/signin?return=%2Fgames%2Fnew%3Fform%3Dx"
+
+  -- Round trips for captures and every kind of query field.
+  quickCheck $ \(UrlText s) ->
+    match (links.game s) === Right (handlers.game s)
+
+  quickCheck $ \(UrlText s) ->
+    let
+      q = { return: Just s }
+    in
+      match (links.signin q) === Right (handlers.signin q)
+
+  quickCheck $ \(Tuple (ts :: Array UrlText) (Tuple (UrlText one) (Tuple (m :: Maybe UrlText) (many :: Array UrlText)))) ->
+    let
+      unwrap (UrlText s) = s
+      tags = map unwrap ts
+      q = { one, maybe: map unwrap m, many: map unwrap many }
+    in
+      match (links.tags tags q) === Right (handlers.tags tags q)

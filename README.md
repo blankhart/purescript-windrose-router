@@ -102,14 +102,30 @@ The capture and query parameters may be any type with a `ToUrlPiece` instance.
 
 An endpoint at the root, such as a bare `V "index"`, links to `/`.  A query parameter of type `Maybe a` or `Array a` is optional, and a query in which every parameter is absent adds nothing to the link, not even the `?`.
 
+### Encoding
+
+Links percent-encode every path segment, capture and query name and value, escaping everything except `A-Z a-z 0-9 - _ . ! ~ * ' ( )` as `encodeURIComponent` does.  A capture of `"a/b?c"` links to `/games/a%2Fb%3Fc` and stays one segment.
+
+When routing a `String`, the router splits the URL first and decodes the pieces after, so an escaped `/`, `?`, `&` or `=` never acts as a separator:
+
+* Everything from the first `#` is ignored, and the query starts at the first `?`.
+* The path is split on `/`, then each segment is percent-decoded.  A `+` in the path is a literal `+`.
+* The query is read as `application/x-www-form-urlencoded`, the way `URLSearchParams` reads it.  It is split on `&` and empty pairs are skipped.  Each pair is split on its first `=` only, so `?term=a=b` gives `term` the value `"a=b"`, and a bare `?flag` gives `flag` the value `""`.  Then `+` is read as a space and the name and value are percent-decoded.
+* A malformed escape never makes a URL unroutable.  An invalid escape such as `%zz` is kept as written, and escaped bytes that aren't valid UTF-8 decode to U+FFFD.
+* Query parameters that the endpoint doesn't name are ignored.
+
+`FromUrlPiece` and `ToUrlPiece` instances work on this decoded text, so they never deal with escapes themselves.
+
 ## Laws
 
 These functions should satisfy the property that, for each endpoint in the user's API, running `route` on the link produced by `allLinks` always produces the same value as the corresponding handler.
 
 ```purescript
-  quickCheck $ \username ->
+  quickCheck $ \(UrlText username) ->
     match (links.profile username) === Right (handlers.profile username)
 ```
+
+This holds for any well-formed Unicode text, including text that contains reserved characters such as `/ ? & = # % +`.  `UrlText` in `test/Main.purs` generates such text.  A PureScript `String` can also hold a lone surrogate, which has no UTF-8 encoding and so cannot appear in a URL.  Links print it as U+FFFD, the way browsers do.
 
 ## Examples
 

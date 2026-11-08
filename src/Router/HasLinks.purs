@@ -4,6 +4,10 @@ module Windrose.Router.HasLinks
   , allLinksWith
   , class HasLinks
   , mkLinks
+  , class EndpointLink
+  , endpointLink
+  , class TerminalLink
+  , terminalLink
   ) where
 
 import Prelude
@@ -17,8 +21,7 @@ import Prim.Row as Row
 import Prim.RowList (class RowToList)
 import Record as Record
 import Type.Proxy (Proxy(..))
-import Windrose.Router.API (type (:<|>), type (:>), C, M, NIL, P, Q, Route, RouteProxy(..), V)
-import Windrose.Router.IsEndpoint (class IsEndpoint)
+import Windrose.Router.Canonical (Capture, CaptureMany, ECons, ENil, End, Endpoint, Endpoints, NoQuery, Path, Query, Terminal)
 import Windrose.Router.PercentEncoding (percentEncode)
 import Windrose.Router.QueryPairs (FoldToQueryPairs, QueryPairs(..), QueryParams(..), toQueryPairs)
 import Windrose.Router.Routable (Routable)
@@ -59,78 +62,81 @@ allLinksWith
   => (Link -> action)
   -> Routable layout
   -> links
-allLinksWith toAction _ = mkLinks (RouteProxy :: RouteProxy layout) toAction ""
+allLinksWith toAction _ = mkLinks (Proxy :: _ layout) toAction
 
 --------------------------------------------------------------------------------
 -- HasLinks
 --------------------------------------------------------------------------------
 
-class HasLinks (layout :: Route) (action :: Type) (links :: Type) | layout action -> links where
-  mkLinks :: RouteProxy layout -> (Link -> action) -> Link -> links
+-- | `HasLinks` instances build the record of link generators for a
+-- | canonical `layout`, with one field per endpoint.
+class HasLinks (layout :: Endpoints) (action :: Type) (links :: Type) | layout action -> links where
+  mkLinks :: Proxy layout -> (Link -> action) -> links
 
-instance hasLinksRouteSumNil ::
-  ( HasLinks endpoint action link
-  , IsEndpoint endpoint name
-  , Row.Cons name link () links
-  , Row.Lacks name ()
-  , IsSymbol name
-  ) =>
-  HasLinks (endpoint :<|> NIL) action (Record links) where
-  mkLinks _ toAction link = Record.insert (Proxy :: _ name)
-    (mkLinks (RouteProxy :: _ endpoint) toAction link)
-    {}
+instance hasLinksNil :: HasLinks ENil action (Record ()) where
+  mkLinks _ _ = {}
 
-else instance hasLinksRouteSumCons ::
-  ( HasLinks endpoint action link
-  , IsEndpoint endpoint name
+instance hasLinksCons ::
+  ( EndpointLink endpoint action link
+  , HasLinks rest action (Record sublinks)
   , Row.Cons name link sublinks links
   , Row.Lacks name sublinks
   , IsSymbol name
-  , HasLinks sublayout action (Record sublinks)
   ) =>
-  HasLinks (endpoint :<|> sublayout) action (Record links) where
-  mkLinks _ toAction link = Record.insert (Proxy :: _ name)
-    (mkLinks (RouteProxy :: _ endpoint) toAction link)
-    (mkLinks (RouteProxy :: _ sublayout) toAction link)
+  HasLinks (ECons name endpoint rest) action (Record links) where
+  mkLinks _ toAction = Record.insert (Proxy :: _ name)
+    (endpointLink (Proxy :: _ endpoint) toAction "")
+    (mkLinks (Proxy :: _ rest) toAction)
 
-else instance hasLinksPathComponent ::
-  ( HasLinks sublayout action links
+-- | `EndpointLink` instances accumulate the path of an endpoint, left to
+-- | right, into a `Link`.
+class EndpointLink (endpoint :: Endpoint) (action :: Type) (link :: Type) | endpoint action -> link where
+  endpointLink :: Proxy endpoint -> (Link -> action) -> Link -> link
+
+instance endpointLinkPath ::
+  ( EndpointLink rest action link
   , IsSymbol s
   ) =>
-  HasLinks (P s :> sublayout) action links where
-  mkLinks _ toAction link =
-    mkLinks (RouteProxy :: _ sublayout) toAction
-      (appendPathSegment (reflectSymbol (Proxy :: Proxy s)) link)
+  EndpointLink (Path s rest) action link where
+  endpointLink _ toAction link =
+    endpointLink (Proxy :: _ rest) toAction
+      (appendPathSegment (reflectSymbol (Proxy :: _ s)) link)
 
-else instance hasLinksCapture ::
-  ( HasLinks sublayout action links
-  , IsSymbol s
+instance endpointLinkCapture ::
+  ( EndpointLink rest action link
   , ToUrlPiece a
   ) =>
-  HasLinks (C s a :> sublayout) action (a -> links) where
-  mkLinks _ toAction link = \a ->
-    mkLinks (RouteProxy :: _ sublayout) toAction
+  EndpointLink (Capture s a rest) action (a -> link) where
+  endpointLink _ toAction link = \a ->
+    endpointLink (Proxy :: _ rest) toAction
       (appendPathSegment (toUrlPiece a) link)
 
-else instance hasLinksCaptureMany ::
-  ( HasLinks sublayout action links
-  , IsSymbol s
+instance endpointLinkCaptureMany ::
+  ( TerminalLink terminal action link
   , ToUrlPiece a
   ) =>
-  HasLinks (M s a :> sublayout) action (Array a -> links) where
-  mkLinks _ toAction link = \captures ->
-    mkLinks (RouteProxy :: _ sublayout) toAction
+  EndpointLink (CaptureMany s a terminal) action (Array a -> link) where
+  endpointLink _ toAction link = \captures ->
+    terminalLink (Proxy :: _ terminal) toAction
       (foldl (\l c -> appendPathSegment (toUrlPiece c) l) link captures)
 
-else instance hasLinksQueryString ::
-  ( HasLinks sublayout action links
-  , RowToList params paramsRL
+instance endpointLinkEnd ::
+  ( TerminalLink terminal action link
+  ) =>
+  EndpointLink (End terminal) action link where
+  endpointLink _ = terminalLink (Proxy :: _ terminal)
+
+-- | `TerminalLink` instances finish a `Link` once its path is complete.
+class TerminalLink (terminal :: Terminal) (action :: Type) (link :: Type) | terminal action -> link where
+  terminalLink :: Proxy terminal -> (Link -> action) -> Link -> link
+
+instance terminalLinkNoQuery :: TerminalLink NoQuery action action where
+  terminalLink _ toAction link = toAction (rooted link)
+
+instance terminalLinkQuery ::
+  ( RowToList params paramsRL
   , FoldlRecord FoldToQueryPairs QueryPairs paramsRL params QueryPairs
   ) =>
-  HasLinks (Q params :> sublayout) action (Record params -> links) where
-  mkLinks _ toAction link = \params ->
-    mkLinks (RouteProxy :: _ sublayout) toAction
-      (appendQueryString (toQueryPairs (QueryParams params)) link)
-
-else instance hasLinksView :: (IsSymbol sym) => HasLinks (V sym) action action where
-  mkLinks _ toAction link = toAction (rooted link)
+  TerminalLink (Query params) action (Record params -> action) where
+  terminalLink _ toAction link = \params ->
+    toAction (rooted (appendQueryString (toQueryPairs (QueryParams params)) link))

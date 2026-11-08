@@ -42,13 +42,15 @@ type ReadmeApi =
   :<|> P "figures" :> M "figures" Int :> V "figures"
 ```
 
-Each endpoint must terminate in `V name` and must be uniquely specified by `name`.
+Each endpoint must terminate in `V name` and must be uniquely specified by `name`.  Within an endpoint, path pieces (`P`, `C`, `M`) come first, a capture-many `M` must be the last of them, and a query `Q` may appear only immediately before the view.
 
 The library uses the type specified in this way to produce the following functions:
 
 ### Routes: `Windrose.Router.Routable.mkRoutable`
 
-This is a smart constructor used to turn the user's API into a `Routable api`.  A value of type `Routable api` is a proxy for a normalized version of the type specified by the user API. In the normalized version, nested alternatives have been removed and all type operators associate to the right.
+This is a smart constructor used to turn the user's API into a `Routable api`.  A value of type `Routable api` is a proxy for the canonical form of the user's API: an ordered list of named endpoints, of kind `Endpoints`, in which shared prefixes such as `P "article"` above have been distributed over the alternatives that follow them.  This is also the point where the API is checked.  A misplaced combinator, such as a `V` that is not last or a `Q` followed by a path segment, fails to compile at `mkRoutable` with a message that quotes the offending part of the API.
+
+Every API, including one with a single endpoint, produces a record of handlers and a record of links.
 
 ```purescript
   let api = mkRoutable (RouteProxy :: _ ReadmeApi)

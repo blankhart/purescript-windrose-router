@@ -2,7 +2,7 @@ package:
   name: windrose-router
   description: A typelevel frontend router
   publish:
-    version: 0.1.1
+    version: 0.2.0
     license: MIT
     location:
       githubOwner: blankhart

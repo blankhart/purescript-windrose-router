@@ -6,6 +6,7 @@
 /**/.spago
 /**/.vscode
 !/.gitignore
+!/.tidyrc.json
 !/.eslintrc.json
 !/.travis.yml
 package-lock.json

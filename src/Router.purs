@@ -11,6 +11,9 @@ import Windrose.Router.API
   , RouteProxy(..)
   , V
   ) as Export
+import Windrose.Router.Canonical
+  ( Endpoints
+  ) as Export
 import Windrose.Router.Error
   ( RoutingError(..)
   ) as Export

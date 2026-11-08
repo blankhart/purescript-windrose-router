@@ -77,6 +77,8 @@ main = do
   checkRootAndOptionalQueryTests
   log "Percent-encoding tests"
   checkPercentEncodingTests
+  log "Canonical form tests"
+  checkCanonicalFormTests
 
 -- purescript-routing tests
 
@@ -304,3 +306,49 @@ checkPercentEncodingTests = do
       q = { one, maybe: map unwrap m, many: map unwrap many }
     in
       match (links.tags tags q) === Right (handlers.tags tags q)
+
+-- Canonical form tests
+
+-- | An API with one endpoint still gives records of handlers and links.
+type SingleApi = P "only" :> C "n" Int :> V "only"
+
+-- | Left-nested products are reassociated, and a prefix ending in a query
+-- | is distributed over the views that follow it.
+type ShapesApi =
+  (P "a" :> P "b") :> V "ab"
+    :<|> P "x"
+    :> Q (q :: String)
+    :> (V "v1" :<|> V "v2")
+
+checkCanonicalFormTests :: Effect Unit
+checkCanonicalFormTests = do
+  let
+    single = mkRoutable (RouteProxy :: _ SingleApi)
+    singleLinks = allLinks single
+    singleHandlers = { only: \(n :: Int) -> "only " <> show n }
+    matchSingle = route single singleHandlers
+
+  assert $ singleLinks.only 7 === "/only/7"
+  assert $ matchSingle "/only/7" === Right "only 7"
+  quickCheck $ \n ->
+    matchSingle (singleLinks.only n) === Right (singleHandlers.only n)
+
+  let
+    shapes = mkRoutable (RouteProxy :: _ ShapesApi)
+    shapesLinks = allLinks shapes
+    shapesHandlers =
+      { ab: "ab"
+      , v1: \(r :: { q :: String }) -> "v1 " <> r.q
+      , v2: \(r :: { q :: String }) -> "v2 " <> r.q
+      }
+    matchShapes = route shapes shapesHandlers
+
+  assert $ shapesLinks.ab === "/a/b"
+  assert $ matchShapes shapesLinks.ab === Right "ab"
+  assert $ shapesLinks.v1 { q: "z" } === "/x?q=z"
+  assert $ shapesLinks.v2 { q: "z" } === "/x?q=z"
+  -- `v1` and `v2` share a URL, so the first one declared wins.
+  quickCheck $ \(UrlText q) ->
+    matchShapes (shapesLinks.v1 { q }) === Right (shapesHandlers.v1 { q })
+  quickCheck $ \(UrlText q) ->
+    matchShapes (shapesLinks.v2 { q }) === Right (shapesHandlers.v1 { q })

@@ -2,112 +2,111 @@ module Windrose.Router.Routable
   ( Routable
   , mkRoutable
   , class Canonicalize
-  , class Distribute
-  , class Reassociate
-  , EMPTY
+  , class Flatten
+  , class PrefixOnto
+  , class Prefix
   ) where
 
-import Prim.TypeError (class Fail, Above, Text)
-import Windrose.Router.API (type (:<|>), type (:>), NIL, Route, RouteProxy(..))
+import Prim.TypeError (class Fail, Above, Quote, Text)
+import Type.Proxy (Proxy(..))
+import Windrose.Router.API (type (:<|>), type (:>), C, M, P, Q, Route, RouteProxy, V)
+import Windrose.Router.Canonical (Capture, CaptureMany, ECons, ENil, End, Endpoint, Endpoints, NoQuery, Path, Query)
 
--- | A wrapper for a token representing the structure of the normalized API.
-newtype Routable api = Routable (RouteProxy api)
+-- | A token for the canonical form of a user-specified API.
+newtype Routable (api :: Endpoints) = Routable (Proxy api)
 
--- | A smart constructor for a normalized version of the typelevel API
+-- | A smart constructor for the canonical form of the typelevel API
 -- | specified by the user.
 mkRoutable
   :: forall nested api
    . Canonicalize nested api
   => RouteProxy nested
   -> Routable api
-mkRoutable _ = Routable (RouteProxy :: RouteProxy api)
+mkRoutable _ = Routable (Proxy :: Proxy api)
 
--- | An internal combinator used when computing a normalized type.
--- | Users of the library should not refer to this combinator,
--- | even though it must be exported due to transitive export
--- | restrictions.
-foreign import data EMPTY :: Route
+-- | Determine the canonical form of an API: the list of its endpoints in
+-- | the order they are declared, with shared prefixes distributed over the
+-- | alternatives that follow them.
+class Canonicalize (api :: Route) (canonical :: Endpoints) | api -> canonical
+
+instance canonicalizeFlatten :: Flatten api ENil canonical => Canonicalize api canonical
 
 type BadNestingError = Text "Invalid nesting in the definition of the API.  Endpoints must branch to the right.  Try adjusting parentheses."
 
--- | Determine a type in which nested combinators have been removed
--- | by distributing the stem of the path over sub-paths.
-class Distribute (nested :: Route) (prior :: Route) (distributed :: Route) | nested prior -> distributed
+-- | `Flatten r acc out` puts the endpoints of `r` in front of `acc`.
+class Flatten (r :: Route) (acc :: Endpoints) (out :: Endpoints) | r acc -> out
 
-instance distributeBadLeftAltCons ::
-  ( Fail (Above BadNestingError (Text "Failure of type (a :<|> b) :> c."))
+instance flattenBadLeftAltSeq ::
+  ( Fail (Above BadNestingError (Above (Text "Failure of type (a :<|> b) :> c in:") (Quote ((a :<|> b) :> c))))
   ) =>
-  Distribute ((a :<|> b) :> c) p d
+  Flatten ((a :<|> b) :> c) acc out
 
-else instance distributeBadLeftAltAlt ::
-  ( Fail (Above BadNestingError (Text "Failure of type (a :<|> b) :<|> c."))
+else instance flattenBadLeftAltAlt ::
+  ( Fail (Above BadNestingError (Above (Text "Failure of type (a :<|> b) :<|> c in:") (Quote ((a :<|> b) :<|> c))))
   ) =>
-  Distribute ((a :<|> b) :<|> c) p d
+  Flatten ((a :<|> b) :<|> c) acc out
 
-else instance distributePathDist ::
-  ( Distribute x p px
-  , Distribute a px pxa
-  , Distribute b px pxb
+else instance flattenLeftSeq ::
+  ( Flatten (a :> b :> c) acc out
   ) =>
-  Distribute (x :> (a :<|> b)) p (pxa :<|> pxb)
+  Flatten ((a :> b) :> c) acc out
 
-else instance distributePathSeq ::
-  ( Distribute x p px
-  , Distribute y px pxy
+else instance flattenAlt ::
+  ( Flatten b acc acc'
+  , Flatten a acc' out
   ) =>
-  Distribute (x :> y) p pxy
+  Flatten (a :<|> b) acc out
 
-else instance distributePathAlt ::
-  ( Distribute a p pa
-  , Distribute b p pb
+else instance flattenViewNotLast ::
+  ( Fail (Above (Text "A view V must be the last combinator of an endpoint, in:") (Quote (V name :> rest)))
   ) =>
-  Distribute (a :<|> b) p (pa :<|> pb)
+  Flatten (V name :> rest) acc out
 
-else instance distributeEMPTY :: Distribute x EMPTY x
-
-else instance distributePrior :: Distribute x p (p :> x)
-
--- TODO: Custom type error if the user passes NIL
-
--- | Determine a type in which the combinators have 
--- | been rearranged to associate to the right.
-class Reassociate (i :: Route) (o :: Route) | i -> o
-
-instance reassociateLeftSeq ::
-  ( Reassociate (a :> b :> c) o
+else instance flattenSeq ::
+  ( Flatten rest ENil endpoints
+  , PrefixOnto (x :> rest) x endpoints acc out
   ) =>
-  Reassociate ((a :> b) :> c) o
+  Flatten (x :> rest) acc out
 
-else instance reassociateSeq ::
-  ( Reassociate b b'
+else instance flattenView :: Flatten (V name) acc (ECons name (End NoQuery) acc)
+
+else instance flattenNoView ::
+  ( Fail (Above (Text "Every endpoint must end in a view V, but this does not:") (Quote r))
   ) =>
-  Reassociate (a :> b) (a :> b')
+  Flatten r acc out
 
-else instance reassociateLeftAlt ::
-  ( Reassociate (a :<|> b :<|> c) o
+-- | `PrefixOnto ctx x endpoints acc out` puts `x` in front of each of the
+-- | `endpoints`, and those in front of `acc`.  `ctx` is the fragment of the
+-- | user's API being flattened, for error messages.
+class PrefixOnto (ctx :: Route) (x :: Route) (endpoints :: Endpoints) (acc :: Endpoints) (out :: Endpoints) | ctx x endpoints acc -> out
+
+instance prefixOntoNil :: PrefixOnto ctx x ENil acc acc
+
+instance prefixOntoCons ::
+  ( Prefix ctx x e e'
+  , PrefixOnto ctx x rest acc out
   ) =>
-  Reassociate ((a :<|> b) :<|> c) o
+  PrefixOnto ctx x (ECons name e rest) acc (ECons name e' out)
 
-else instance reassociateAltCons ::
-  ( Reassociate a a'
-  , Reassociate (b :<|> c) bc'
+-- | `Prefix ctx x e e'` puts the path piece `x` in front of the endpoint `e`,
+-- | rejecting a combinator that cannot appear there.  A view `V` never
+-- | reaches here, since `Flatten` rejects `V name :> rest` first.
+class Prefix (ctx :: Route) (x :: Route) (e :: Endpoint) (e' :: Endpoint) | ctx x e -> e'
+
+instance prefixPath :: Prefix ctx (P s) e (Path s e)
+
+else instance prefixCapture :: Prefix ctx (C s a) e (Capture s a e)
+
+else instance prefixCaptureMany :: Prefix ctx (M s a) (End t) (CaptureMany s a t)
+
+else instance prefixCaptureManyNotLast ::
+  ( Fail (Above (Text "A capture-many M must be the last path piece of an endpoint, followed by at most a query Q and the view V, in:") (Quote ctx))
   ) =>
-  Reassociate (a :<|> (b :<|> c)) (a' :<|> bc')
+  Prefix ctx (M s a) e e'
 
-else instance reassociateAltEnd ::
-  ( Reassociate a a'
-  , Reassociate b b'
+else instance prefixQuery :: Prefix ctx (Q params) (End NoQuery) (End (Query params))
+
+else instance prefixQueryNotLast ::
+  ( Fail (Above (Text "A query Q must come immediately before the view V of an endpoint, in:") (Quote ctx))
   ) =>
-  Reassociate (a :<|> b) (a' :<|> b' :<|> NIL)
-
-else instance reassociateSegment :: Reassociate a a
-
--- | Determine the canonical type in which combinators have
--- | been unnested and rearranged to associate to the right.
-class Canonicalize (from :: Route) (to :: Route) | from -> to
-
-instance routableCanonicalize ::
-  ( Distribute nested EMPTY distributed
-  , Reassociate distributed reassociated
-  ) =>
-  Canonicalize nested reassociated
+  Prefix ctx (Q params) e e'

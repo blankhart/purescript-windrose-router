@@ -5,12 +5,13 @@
   "scripts": {
     "build": "spago build",
     "test": "spago test",
+    "test:fail": "node test-fail/run.js",
     "docs": "spago docs",
     "example:halogen:build": "spago bundle -p windrose-router-example-halogen",
     "example:halogen:run": "npm run example:halogen:build && esbuild --servedir=examples/halogen",
-    "format": "purs-tidy format-in-place 'src/**/*.purs' 'test/**/*.purs' 'examples/**/*.purs'",
-    "format:check": "purs-tidy check 'src/**/*.purs' 'test/**/*.purs' 'examples/**/*.purs'",
-    "validate": "npm run format:check && npm run test && npm run build"
+    "format": "purs-tidy format-in-place 'src/**/*.purs' 'test/**/*.purs' 'test-fail/**/*.purs' 'examples/**/*.purs'",
+    "format:check": "purs-tidy check 'src/**/*.purs' 'test/**/*.purs' 'test-fail/**/*.purs' 'examples/**/*.purs'",
+    "validate": "npm run format:check && npm run test && npm run test:fail && npm run build"
   },
   "repository": {
     "type": "git",

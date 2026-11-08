@@ -19,14 +19,17 @@ import Record as Record
 import Type.Proxy (Proxy(..))
 import Windrose.Router.API (type (:<|>), type (:>), C, M, NIL, P, Q, Route, RouteProxy(..), V)
 import Windrose.Router.IsEndpoint (class IsEndpoint)
+import Windrose.Router.PercentEncoding (percentEncode)
 import Windrose.Router.QueryPairs (FoldToQueryPairs, QueryPairs(..), QueryParams(..), toQueryPairs)
 import Windrose.Router.Routable (Routable)
 import Windrose.Router.UrlPiece (class ToUrlPiece, toUrlPiece)
 
 type Link = String
 
+-- | Path segments, including `P` literals, are percent-encoded so that a
+-- | value such as `"a/b?c"` stays one segment.
 appendPathSegment :: String -> Link -> Link
-appendPathSegment s path = path <> "/" <> s
+appendPathSegment s path = path <> "/" <> percentEncode s
 
 -- | The root has no path segments to print, and is "/".
 rooted :: Link -> Link
@@ -37,7 +40,7 @@ rooted path = if path == "" then "/" else path
 appendQueryString :: QueryPairs -> Link -> Link
 appendQueryString (QueryPairs qps) path = case qps of
   [] -> path
-  _ -> rooted path <> "?" <> joinWith "&" (map (\(Tuple k v) -> k <> "=" <> v) qps)
+  _ -> rooted path <> "?" <> joinWith "&" (map (\(Tuple k v) -> percentEncode k <> "=" <> percentEncode v) qps)
 
 --------------------------------------------------------------------------------
 -- allLinks

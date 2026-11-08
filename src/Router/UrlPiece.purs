@@ -16,6 +16,8 @@ import Prelude (identity, show, (>=>), (>>>))
 -- ToUrlPiece
 --------------------------------------------------------------------------------
 
+-- | Print a capture or query value as text.  Produce the plain text, not
+-- | an escaped form: links percent-encode the result.
 class ToUrlPiece a where
   toUrlPiece :: a -> String
 
@@ -40,6 +42,8 @@ instance booleanToCapture :: ToUrlPiece Boolean where
 -- FromUrlPiece
 --------------------------------------------------------------------------------
 
+-- | Read a capture or query value.  The router passes text that has
+-- | already been percent-decoded (and, in a query, had `+` read as a space).
 class FromUrlPiece a where
   fromUrlPiece :: String -> Maybe a
 
